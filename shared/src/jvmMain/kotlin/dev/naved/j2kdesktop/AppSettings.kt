@@ -32,6 +32,29 @@ object AppSettings {
         prefs.edit().putString("theme", value.name).apply()
     }
 
+    /** Covers per row in Library and Browse grids. */
+    var gridColumns by mutableStateOf(prefs.getInt("grid_columns", 8).coerceIn(3, 14))
+        private set
+
+    fun changeGridColumns(value: Int) {
+        gridColumns = value.coerceIn(3, 14)
+        prefs.edit().putInt("grid_columns", gridColumns).apply()
+    }
+
+    /** Languages hidden from Browse (sources and extensions), e.g. "ar", "ru". */
+    var hiddenLanguages by mutableStateOf(prefs.getStringSet("hidden_languages", emptySet()).orEmpty().toSet())
+        private set
+
+    fun setLanguageShown(lang: String, shown: Boolean) {
+        hiddenLanguages = if (shown) hiddenLanguages - lang else hiddenLanguages + lang
+        prefs.edit().putStringSet("hidden_languages", hiddenLanguages).apply()
+    }
+
+    fun showAllLanguages() {
+        hiddenLanguages = emptySet()
+        prefs.edit().putStringSet("hidden_languages", emptySet()).apply()
+    }
+
     var updateOnStart: Boolean
         get() = prefs.getBoolean("update_on_start", true)
         set(value) = prefs.edit().putBoolean("update_on_start", value).apply()

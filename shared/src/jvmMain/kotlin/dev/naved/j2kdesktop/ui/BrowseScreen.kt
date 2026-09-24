@@ -133,6 +133,23 @@ fun SourceScreen(
         mutableStateOf((model.listing as? Listing.Search)?.query ?: "")
     }
 
+    var showFilters by remember(model) { mutableStateOf(false) }
+    if (showFilters) {
+        SourceFiltersDialog(
+            filters = model.filters,
+            onApply = {
+                showFilters = false
+                model.search(query, withFilters = true)
+            },
+            onReset = {
+                model.resetFilters()
+                showFilters = false
+                if (model.listing is Listing.Search) model.search(query, withFilters = false)
+            },
+            onDismiss = { showFilters = false },
+        )
+    }
+
     Column(Modifier.fillMaxSize()) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             TextButton(onClick = onBack) { Text("← Back") }
@@ -166,22 +183,31 @@ fun SourceScreen(
                     .width(360.dp)
                     .onPreviewKeyEvent { event ->
                         if (event.key == Key.Enter && event.type == KeyEventType.KeyDown) {
-                            if (query.isNotBlank()) model.switchListing(Listing.Search(query.trim()))
+                            if (query.isNotBlank() || model.filtersActive) model.search(query, model.filtersActive)
                             true
                         } else {
                             false
                         }
                     },
             )
+            androidx.compose.material3.OutlinedButton(onClick = { showFilters = true }) {
+                Text(if (model.filtersActive) "Filters ●" else "Filters")
+            }
+            if (model.filtersActive) {
+                TextButton(onClick = {
+                    model.resetFilters()
+                    model.switchListing(Listing.Popular)
+                }) { Text("Clear filters") }
+            }
         }
         Spacer(Modifier.height(12.dp))
 
         Box(Modifier.fillMaxSize()) {
         LazyVerticalGrid(
-            columns = GridCells.Adaptive(minSize = 140.dp),
+            columns = GridCells.Fixed(dev.naved.j2kdesktop.AppSettings.gridColumns),
             state = gridState,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(20.dp),
+            verticalArrangement = Arrangement.spacedBy(20.dp),
             modifier = Modifier.fillMaxSize().padding(end = ScrollbarGutter),
         ) {
             items(model.mangas, key = { it.url }) { manga ->

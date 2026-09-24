@@ -344,7 +344,7 @@ class ReaderModel(
         if (newMode == mode) return
         val page = currentPageIndex
         mode = newMode
-        prefs.edit().putString("mode_$mangaKey", mode.name).apply()
+        if (!dev.naved.j2kdesktop.Incognito.enabled) prefs.edit().putString("mode_$mangaKey", mode.name).apply()
         if (newMode.scrolls) {
             // Keep your place: the list jumps to the page you were on
             scrollPage = page
@@ -362,7 +362,7 @@ class ReaderModel(
 
     fun toggleDirection() {
         rightToLeft = !rightToLeft
-        prefs.edit().putBoolean("rtl_$mangaKey", rightToLeft).apply()
+        if (!dev.naved.j2kdesktop.Incognito.enabled) prefs.edit().putBoolean("rtl_$mangaKey", rightToLeft).apply()
     }
 
     fun toggleSpread() {
@@ -374,7 +374,7 @@ class ReaderModel(
 
     fun toggleShift() {
         shiftSpread = !shiftSpread
-        prefs.edit().putBoolean("shift_$mangaKey", shiftSpread).apply()
+        if (!dev.naved.j2kdesktop.Incognito.enabled) prefs.edit().putBoolean("shift_$mangaKey", shiftSpread).apply()
     }
 
     fun changeWebtoonWidth(delta: Int) = updateWebtoonWidth(webtoonWidth + delta)

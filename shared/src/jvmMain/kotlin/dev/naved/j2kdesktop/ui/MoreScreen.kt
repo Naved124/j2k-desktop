@@ -10,9 +10,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Switch
@@ -25,7 +23,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import dev.naved.j2kdesktop.AppSettings
 import dev.naved.j2kdesktop.browser.Browser
@@ -33,11 +30,10 @@ import dev.naved.j2kdesktop.browser.BrowserLocator
 import dev.naved.j2kdesktop.browser.CookieStore
 import dev.naved.j2kdesktop.compat.AndroidCompat
 import dev.naved.j2kdesktop.compat.AppDirs
-import dev.naved.j2kdesktop.download.DownloadManager
 import dev.naved.j2kdesktop.library.LibraryUpdater
 import java.io.File
 
-/** More: downloads queue, library update and browser settings, where things are stored. */
+/** More: library update and browser settings, where things are stored. */
 @Composable
 fun MoreTab() {
     val listState = androidx.compose.foundation.lazy.rememberLazyListState()
@@ -46,61 +42,8 @@ fun MoreTab() {
         item {
             Text("More", style = MaterialTheme.typography.headlineMedium)
             Spacer(Modifier.height(16.dp))
-            SectionTitle("Downloads")
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(
-                    when {
-                        DownloadManager.queue.isEmpty() -> "Nothing queued"
-                        DownloadManager.isPaused -> "Paused · ${DownloadManager.queue.size} queued"
-                        else -> "Downloading · ${DownloadManager.queue.size} queued"
-                    },
-                    modifier = Modifier.weight(1f),
-                )
-                if (DownloadManager.queue.isNotEmpty()) {
-                    if (DownloadManager.isPaused) {
-                        OutlinedButton(onClick = { DownloadManager.resume() }) { Text("Resume") }
-                    } else {
-                        OutlinedButton(onClick = { DownloadManager.pause() }) { Text("Pause") }
-                    }
-                    TextButton(onClick = { DownloadManager.clearQueue() }) { Text("Clear queue") }
-                }
-                TextButton(onClick = { openFolder(DownloadManager.root) }) { Text("Open folder") }
-            }
-            Text(
-                DownloadManager.root.path,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-        items(DownloadManager.queue, key = { it.key }) { task ->
-            Row(Modifier.fillMaxWidth().padding(start = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f)) {
-                    Text(
-                        "${runCatching { task.manga.title }.getOrDefault("")} · ${task.chapter.name}",
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    when {
-                        task.error != null -> Text("Failed: ${task.error}", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
-                        task.running && task.total > 0 -> LinearProgressIndicator(
-                            progress = { task.done.toFloat() / task.total },
-                            modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
-                        )
-                        task.running -> Text("Getting the page list…", style = MaterialTheme.typography.bodySmall)
-                        else -> Text("Queued", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                }
-                if (task.error != null) {
-                    TextButton(onClick = {
-                        task.error = null
-                        DownloadManager.resume()
-                    }) { Text("Retry") }
-                }
-                TextButton(onClick = { DownloadManager.cancel(task) }) { Text("✕") }
-            }
         }
         item {
-            Spacer(Modifier.height(16.dp))
             SectionTitle("Library")
             var updateOnStart by remember { mutableStateOf(AppSettings.updateOnStart) }
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -182,7 +125,7 @@ private fun SectionTitle(text: String) {
     HorizontalDivider(Modifier.padding(vertical = 6.dp))
 }
 
-private fun openFolder(dir: File) {
+internal fun openFolder(dir: File) {
     dir.mkdirs()
     runCatching { ProcessBuilder("xdg-open", dir.absolutePath).start() }
         .recoverCatching { java.awt.Desktop.getDesktop().open(dir) }

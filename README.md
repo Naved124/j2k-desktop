@@ -14,7 +14,8 @@ A desktop port of the [TachiyomiJ2K](https://github.com/Jays2Kings/tachiyomiJ2K)
   - Categories, unread badges, and library updates (manually or when the app starts).
   - A per-manga scanlator group filter.
 - **Recents:** reading history, and new chapters found by library updates.
-- **Downloads** for offline reading, saved to `~/Documents/J2KDesktop/downloads/<source>/<manga>/<chapter>/`.
+- **Downloads** for offline reading, saved to `~/Documents/J2KDesktop/downloads/<source>/<manga>/<chapter>/`. The Downloads page lists the queue in order (first clicked, first downloaded), with progress, pause/resume and reordering.
+- **Incognito:** a sidebar switch that stops history, reading progress, tracking and new cover caching. It lasts for the current session only.
 - **Cloudflare and WebView sources:** handled by driving the Chromium, Chrome, Brave or Edge you already have installed. If a site asks for a click, a small window opens for it.
 - **Backups:** imports `.tachibk` / `.proto.gz` backups from Tachiyomi, J2K and Mihon, and writes backups those apps can import.
 - **Tracking:** AniList, with your own API client (set it up in More → Tracking).

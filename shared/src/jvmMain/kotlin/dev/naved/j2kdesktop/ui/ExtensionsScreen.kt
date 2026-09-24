@@ -47,8 +47,9 @@ fun ExtensionsScreen() {
     var showRepos by remember { mutableStateOf(manager.repos.isEmpty()) }
 
     val installedPkgs = manager.installed.map { it.meta.pkg }.toSet()
+    val hiddenLanguages = dev.naved.j2kdesktop.AppSettings.hiddenLanguages
     fun matches(name: String, lang: String, nsfw: Boolean) =
-        (showNsfw || !nsfw) &&
+        (showNsfw || !nsfw) && lang !in hiddenLanguages &&
             (query.isBlank() || name.contains(query, ignoreCase = true) || lang.equals(query, ignoreCase = true))
 
     val installed = manager.installed.filter { matches(it.meta.name, it.meta.lang, it.meta.nsfw) }

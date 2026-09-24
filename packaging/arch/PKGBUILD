@@ -3,7 +3,7 @@
 # Result: /opt/j2k-desktop (app + bundled Java runtime), /usr/bin/j2k-desktop, a menu entry,
 # and tachiyomi:// / mihon:// repo links opening the app.
 pkgname=j2k-desktop
-pkgver=1.0.1
+pkgver=1.0.3
 pkgrel=1
 pkgdesc="TachiyomiJ2K-style manga reader for desktop"
 arch=('x86_64')

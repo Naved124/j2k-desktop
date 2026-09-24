@@ -83,6 +83,19 @@ fun AppearanceAndReaderSettings() {
         }
     }
 
+    Spacer(Modifier.height(12.dp))
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Text("Covers per row: ${AppSettings.gridColumns}", modifier = Modifier.width(180.dp))
+        androidx.compose.material3.Slider(
+            value = AppSettings.gridColumns.toFloat(),
+            onValueChange = { AppSettings.changeGridColumns(kotlin.math.round(it).toInt()) },
+            valueRange = 3f..14f,
+            steps = 10,
+            modifier = Modifier.width(360.dp),
+        )
+    }
+    Hint("Library and Browse grids. 7 fits a 1080p laptop screen nicely.")
+
     Spacer(Modifier.height(16.dp))
     Title("Reader defaults")
     Hint("For manga you haven't opened yet. Each manga remembers its own mode and direction after that.")

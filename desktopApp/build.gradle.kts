@@ -16,7 +16,7 @@ dependencies {
 }
 
 // Release version: ./gradlew ... -PappVersion=1.2.0 (the GitHub release workflow passes the tag)
-val appVersion = (findProperty("appVersion") as String?)?.removePrefix("v") ?: "1.0.1"
+val appVersion = (findProperty("appVersion") as String?)?.removePrefix("v") ?: "1.0.3"
 
 compose.desktop {
     application {

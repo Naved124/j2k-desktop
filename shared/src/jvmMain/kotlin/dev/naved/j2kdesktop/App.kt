@@ -1,5 +1,6 @@
 package dev.naved.j2kdesktop
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -8,6 +9,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import coil3.compose.setSingletonImageLoaderFactory
 import dev.naved.j2kdesktop.ui.BrowseTab
+import dev.naved.j2kdesktop.ui.DownloadsTab
+import dev.naved.j2kdesktop.download.DownloadManager
 import dev.naved.j2kdesktop.ui.LibraryTab
 import dev.naved.j2kdesktop.ui.MoreTab
 import dev.naved.j2kdesktop.ui.RecentsTab
@@ -24,6 +27,7 @@ enum class Tab(val label: String, val glyph: String) {
     Library("Library", "▤"),
     Recents("Recents", "◷"),
     Browse("Browse", "⌕"),
+    Downloads("Downloads", "↓"),
     More("More", "⋯"),
 }
 
@@ -68,18 +72,40 @@ fun App() {
                         NavigationRailItem(
                             selected = current == tab,
                             onClick = { current = tab },
-                            icon = { Text(tab.glyph, style = MaterialTheme.typography.titleLarge) },
+                            icon = {
+                                val queued = DownloadManager.queue.size
+                                if (tab == Tab.Downloads && queued > 0) {
+                                    BadgedBox(badge = { Badge { Text(if (queued > 99) "99+" else "$queued") } }) {
+                                        Text(tab.glyph, style = MaterialTheme.typography.titleLarge)
+                                    }
+                                } else {
+                                    Text(tab.glyph, style = MaterialTheme.typography.titleLarge)
+                                }
+                            },
                             label = { Text(tab.label) },
                         )
                     }
+                    // Incognito: a switch for this session only (never saved, off at every start)
+                    Spacer(Modifier.weight(1f))
+                    NavigationRailItem(
+                        selected = Incognito.enabled,
+                        onClick = { Incognito.toggle() },
+                        icon = { Text(if (Incognito.enabled) "◉" else "◌", style = MaterialTheme.typography.titleLarge) },
+                        label = { Text("Incognito") },
+                    )
+                    Spacer(Modifier.height(12.dp))
                 }
 
-                Box(Modifier.weight(1f).fillMaxHeight().padding(24.dp)) {
-                    when (current) {
-                        Tab.Library -> LibraryTab()
-                        Tab.Recents -> RecentsTab()
-                        Tab.Browse  -> BrowseTab()
-                        Tab.More    -> MoreTab()
+                Column(Modifier.weight(1f).fillMaxHeight()) {
+                    if (Incognito.enabled) IncognitoBanner()
+                    Box(Modifier.weight(1f).fillMaxWidth().padding(24.dp)) {
+                        when (current) {
+                            Tab.Library   -> LibraryTab()
+                            Tab.Recents   -> RecentsTab()
+                            Tab.Browse    -> BrowseTab()
+                            Tab.Downloads -> DownloadsTab()
+                            Tab.More      -> MoreTab()
+                        }
                     }
                 }
             }
@@ -91,6 +117,27 @@ fun App() {
           }
         }
       }
+    }
+}
+
+@Composable
+private fun IncognitoBanner() {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.tertiaryContainer)
+            .padding(horizontal = 24.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            "Incognito is on: nothing you read is saved (no history, no progress, no tracking). It turns off when you close the app.",
+            color = MaterialTheme.colorScheme.onTertiaryContainer,
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.weight(1f),
+        )
+        TextButton(onClick = { Incognito.enabled = false }) {
+            Text("Turn off", color = MaterialTheme.colorScheme.onTertiaryContainer)
+        }
     }
 }
 

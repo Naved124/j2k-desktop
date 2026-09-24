@@ -40,9 +40,12 @@ fun buildImageLoader(context: PlatformContext): ImageLoader =
 @androidx.compose.runtime.Composable
 fun rememberImageRequest(url: String?, headers: okhttp3.Headers?): coil3.request.ImageRequest {
     val context = coil3.compose.LocalPlatformContext.current
-    return androidx.compose.runtime.remember(url, headers) {
+    val incognito = dev.naved.j2kdesktop.Incognito.enabled
+    return androidx.compose.runtime.remember(url, headers, incognito) {
         coil3.request.ImageRequest.Builder(context)
             .data(url)
+            // Incognito: use covers already cached, but don't write new ones to disk
+            .apply { if (incognito) diskCachePolicy(coil3.request.CachePolicy.READ_ONLY) }
             .apply {
                 if (headers != null) {
                     val builder = coil3.network.NetworkHeaders.Builder()

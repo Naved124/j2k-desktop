@@ -5,6 +5,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import eu.kanade.tachiyomi.source.CatalogueSource
+import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.SManga
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -16,7 +17,8 @@ import kotlinx.coroutines.withContext
 sealed interface Listing {
     data object Popular : Listing
     data object Latest : Listing
-    data class Search(val query: String) : Listing
+    /** [run] makes each "Apply filters" a new search, even with the same text. */
+    data class Search(val query: String, val run: Int = 0) : Listing
 }
 
 /** One per source: its current list, paging and scroll position. */
@@ -36,6 +38,29 @@ class BrowseModel(
         private set
     var hasNextPage by mutableStateOf(true)
         private set
+
+    /** The source's own filters (genres, status, sort…), edited in the Filters dialog. */
+    var filters by mutableStateOf(freshFilters())
+        private set
+
+    /** Filters are in use (changed from the source's defaults). */
+    var filtersActive by mutableStateOf(false)
+        private set
+
+    private var searchRuns = 0
+
+    private fun freshFilters(): FilterList = runCatching { source.getFilterList() }.getOrDefault(FilterList())
+
+    fun resetFilters() {
+        filters = freshFilters()
+        filtersActive = false
+    }
+
+    /** Search with the text and the current filters (text may be empty: filters only). */
+    fun search(query: String, withFilters: Boolean) {
+        filtersActive = withFilters
+        switchListing(Listing.Search(query.trim(), ++searchRuns))
+    }
 
     private var currentPage = 0
     private var generation = 0 // bumps on every switch, so late results from the old list get ignored
@@ -67,7 +92,11 @@ class BrowseModel(
                     when (current) {
                         Listing.Popular -> source.getPopularManga(page)
                         Listing.Latest -> source.getLatestUpdates(page)
-                        is Listing.Search -> source.getSearchManga(page, current.query, source.getFilterList())
+                        is Listing.Search -> source.getSearchManga(
+                            page,
+                            current.query,
+                            if (filtersActive) filters else freshFilters(),
+                        )
                     }
                 }
                 if (gen != generation) return@launch

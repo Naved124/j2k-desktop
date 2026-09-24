@@ -101,6 +101,38 @@ object DownloadManager {
         }
     }
 
+    // ----- Order: the queue runs top to bottom, so the first chapter you clicked downloads first -----
+
+    /** Where a task sits in line (1 = next / downloading now). */
+    fun positionOf(task: DownloadTask): Int = queue.indexOf(task) + 1
+
+    fun moveToTop(task: DownloadTask) = move(task, 0)
+
+    fun moveToBottom(task: DownloadTask) = move(task, queue.size - 1)
+
+    fun moveUp(task: DownloadTask) = move(task, queue.indexOf(task) - 1)
+
+    fun moveDown(task: DownloadTask) = move(task, queue.indexOf(task) + 1)
+
+    /**
+     * Moves a task in the line. The chapter being downloaded right now finishes first;
+     * whatever is on top after that goes next.
+     */
+    private fun move(task: DownloadTask, to: Int) {
+        val from = queue.indexOf(task)
+        if (from < 0) return
+        val target = to.coerceIn(0, queue.size - 1)
+        if (target == from) return
+        queue.removeAt(from)
+        queue.add(target, task)
+    }
+
+    /** Clears the error on failed chapters so they're tried again (in their place in line). */
+    fun retryFailed() {
+        queue.forEach { it.error = null }
+        resume()
+    }
+
     fun clearQueue() {
         queue.clear()
         worker?.cancel()

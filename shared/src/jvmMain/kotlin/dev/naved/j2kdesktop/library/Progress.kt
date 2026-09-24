@@ -54,6 +54,7 @@ object ReadProgress {
     /** Called by the reader as pages change. Reaching the last page marks the chapter read. */
     fun onPage(sourceId: Long, manga: SManga, chapter: SChapter, page: Int, lastShownPage: Int, pageCount: Int) {
         if (pageCount <= 0) return
+        if (dev.naved.j2kdesktop.Incognito.enabled) return // incognito: nothing is recorded
         val key = mangaKey(sourceId, manga.url)
         val now = System.currentTimeMillis()
         val old = map[key]

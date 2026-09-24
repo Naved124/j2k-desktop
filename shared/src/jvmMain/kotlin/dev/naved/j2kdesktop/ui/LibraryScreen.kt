@@ -55,6 +55,9 @@ fun LibraryTab() {
     var sort by remember { mutableStateOf(LibrarySort.Title) }
     var shelf by remember { mutableStateOf<Shelf>(Shelf.All) }
     var editCategories by remember { mutableStateOf(false) }
+    var filterStatus by remember { mutableStateOf(emptySet<Int>()) }
+    var filterGenres by remember { mutableStateOf(emptySet<String>()) }
+    var filterLangs by remember { mutableStateOf(emptySet<String>()) }
     val gridState = rememberLazyGridState()
 
     val entry = open
@@ -137,6 +140,14 @@ fun LibraryTab() {
                 )
             }
             TextButton(onClick = { editCategories = true }) { Text("Edit categories") }
+            LibraryFilterButton(
+                status = filterStatus,
+                genres = filterGenres,
+                langs = filterLangs,
+                onStatus = { filterStatus = it },
+                onGenres = { filterGenres = it },
+                onLangs = { filterLangs = it },
+            )
             Spacer(Modifier.width(24.dp))
             Text("Sort:", color = MaterialTheme.colorScheme.onSurfaceVariant)
             LibrarySort.entries.forEach { option ->
@@ -163,6 +174,9 @@ fun LibraryTab() {
                 }
             }
             .filter { query.isBlank() || it.title.contains(query.trim(), ignoreCase = true) }
+            .filter { filterStatus.isEmpty() || it.status in filterStatus }
+            .filter { e -> filterGenres.isEmpty() || genresOf(e).let { g -> filterGenres.all { it in g } } }
+            .filter { e -> filterLangs.isEmpty() || (SourceManager.get(e.sourceId)?.lang ?: "?") in filterLangs }
             .let { list ->
                 when (sort) {
                     LibrarySort.Title -> list.sortedBy { it.title.lowercase() }
@@ -178,10 +192,10 @@ fun LibraryTab() {
 
         androidx.compose.foundation.layout.Box(Modifier.fillMaxSize()) {
         LazyVerticalGrid(
-            columns = GridCells.Adaptive(minSize = 140.dp),
+            columns = GridCells.Fixed(dev.naved.j2kdesktop.AppSettings.gridColumns),
             state = gridState,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(20.dp),
+            verticalArrangement = Arrangement.spacedBy(20.dp),
             modifier = Modifier.fillMaxSize().padding(end = ScrollbarGutter),
         ) {
             items(shown, key = { it.key }) { item ->
@@ -257,5 +271,85 @@ private fun EditCategoriesDialog(onDismiss: () -> Unit) {
             }
         },
         confirmButton = { TextButton(onClick = onDismiss) { Text("Done") } },
+    )
+}
+
+
+private fun genresOf(entry: LibraryEntry): Set<String> =
+    entry.genre?.split(",")?.map { it.trim() }?.filter { it.isNotEmpty() }?.toSet().orEmpty()
+
+private val statusNames = listOf(
+    eu.kanade.tachiyomi.source.model.SManga.ONGOING to "Ongoing",
+    eu.kanade.tachiyomi.source.model.SManga.COMPLETED to "Completed",
+    eu.kanade.tachiyomi.source.model.SManga.PUBLISHING_FINISHED to "Publishing finished",
+    eu.kanade.tachiyomi.source.model.SManga.ON_HIATUS to "On hiatus",
+    eu.kanade.tachiyomi.source.model.SManga.CANCELLED to "Cancelled",
+    eu.kanade.tachiyomi.source.model.SManga.LICENSED to "Licensed",
+    eu.kanade.tachiyomi.source.model.SManga.UNKNOWN to "Unknown",
+)
+
+/** Filter the library by status, genre (all selected must match) and source language. */
+@Composable
+private fun LibraryFilterButton(
+    status: Set<Int>,
+    genres: Set<String>,
+    langs: Set<String>,
+    onStatus: (Set<Int>) -> Unit,
+    onGenres: (Set<String>) -> Unit,
+    onLangs: (Set<String>) -> Unit,
+) {
+    val active = status.size + genres.size + langs.size
+    androidx.compose.foundation.layout.Box {
+        var open by remember { mutableStateOf(false) }
+        OutlinedButton(onClick = { open = true }) { Text(if (active == 0) "Filter" else "Filter ($active)") }
+        androidx.compose.material3.DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
+            androidx.compose.material3.DropdownMenuItem(text = { Text("Clear filters") }, onClick = {
+                onStatus(emptySet())
+                onGenres(emptySet())
+                onLangs(emptySet())
+            })
+            androidx.compose.material3.HorizontalDivider()
+            MenuHeader("Status")
+            val presentStatus = Library.entries.map { it.status }.toSet()
+            statusNames.filter { it.first in presentStatus }.forEach { (code, name) ->
+                MenuCheck(name, code in status) { onStatus(if (code in status) status - code else status + code) }
+            }
+            val langList = Library.entries.mapNotNull { SourceManager.get(it.sourceId)?.lang }.distinct().sorted()
+            if (langList.size > 1) {
+                androidx.compose.material3.HorizontalDivider()
+                MenuHeader("Language")
+                langList.forEach { lang ->
+                    MenuCheck(languageName(lang), lang in langs) { onLangs(if (lang in langs) langs - lang else langs + lang) }
+                }
+            }
+            val genreCounts = Library.entries.flatMap { genresOf(it) }.groupingBy { it }.eachCount()
+                .toList().sortedByDescending { it.second }
+            if (genreCounts.isNotEmpty()) {
+                androidx.compose.material3.HorizontalDivider()
+                MenuHeader("Genres (manga must have all ticked)")
+                genreCounts.forEach { (genre, count) ->
+                    MenuCheck("$genre ($count)", genre in genres) { onGenres(if (genre in genres) genres - genre else genres + genre) }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun MenuHeader(text: String) {
+    Text(
+        text,
+        style = MaterialTheme.typography.labelLarge,
+        color = MaterialTheme.colorScheme.primary,
+        modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
+    )
+}
+
+@Composable
+private fun MenuCheck(label: String, checked: Boolean, onClick: () -> Unit) {
+    androidx.compose.material3.DropdownMenuItem(
+        leadingIcon = { androidx.compose.material3.Checkbox(checked = checked, onCheckedChange = null) },
+        text = { Text(label) },
+        onClick = onClick,
     )
 }
