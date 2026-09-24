@@ -3,6 +3,7 @@ package dev.naved.j2kdesktop.ui
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -57,6 +58,8 @@ fun RecentsTab() {
     var opening by remember { mutableStateOf<String?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
+    val historyState = androidx.compose.foundation.lazy.rememberLazyListState()
+    val updatesState = androidx.compose.foundation.lazy.rememberLazyListState()
 
     open?.let { (sourceId, manga) ->
         val source = SourceManager.get(sourceId)
@@ -124,7 +127,8 @@ fun RecentsTab() {
                 Text("Nothing read yet.", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 return@Column
             }
-            LazyColumn(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Box(Modifier.fillMaxSize()) {
+            LazyColumn(state = historyState, modifier = Modifier.fillMaxSize().padding(end = ScrollbarGutter), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 items(history, key = { "${it.sourceId}|${it.url}" }) { item ->
                     val key = "h|${item.sourceId}|${item.url}"
                     val chapterState = item.lastChapterUrl?.let { item.chapters[it] }
@@ -150,6 +154,8 @@ fun RecentsTab() {
                     )
                 }
             }
+            ListScrollbar(historyState)
+            }
         } else {
             val updates = Updates.list
             if (updates.isEmpty()) {
@@ -160,7 +166,8 @@ fun RecentsTab() {
                 return@Column
             }
             val byDay = updates.groupBy { Instant.ofEpochMilli(it.foundAt).atZone(ZoneId.systemDefault()).toLocalDate() }
-            LazyColumn(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Box(Modifier.fillMaxSize()) {
+            LazyColumn(state = updatesState, modifier = Modifier.fillMaxSize().padding(end = ScrollbarGutter), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 byDay.forEach { (day, entries) ->
                     item(key = "day-$day") {
                         Text(
@@ -191,6 +198,8 @@ fun RecentsTab() {
                         )
                     }
                 }
+            }
+            ListScrollbar(updatesState)
             }
         }
     }

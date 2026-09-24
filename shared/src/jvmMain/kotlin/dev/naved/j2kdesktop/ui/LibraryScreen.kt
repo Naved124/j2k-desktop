@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -175,12 +176,13 @@ fun LibraryTab() {
             return@Column
         }
 
+        androidx.compose.foundation.layout.Box(Modifier.fillMaxSize()) {
         LazyVerticalGrid(
             columns = GridCells.Adaptive(minSize = 140.dp),
             state = gridState,
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier.fillMaxSize().padding(end = ScrollbarGutter),
         ) {
             items(shown, key = { it.key }) { item ->
                 val headers = (SourceManager.get(item.sourceId) as? HttpSource)?.headers
@@ -192,6 +194,8 @@ fun LibraryTab() {
                     badge = unread?.takeIf { it > 0 }?.toString(),
                 )
             }
+        }
+        GridScrollbar(gridState)
         }
     }
 }

@@ -19,3 +19,8 @@ captures
 node_modules/
 .trash/
 build-log.txt
+
+# makepkg output (packaging/arch): built package, staging dirs
+packaging/arch/pkg/
+packaging/arch/src/
+*.pkg.tar.*

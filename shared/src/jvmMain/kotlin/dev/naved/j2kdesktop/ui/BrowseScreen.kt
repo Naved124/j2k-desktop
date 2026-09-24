@@ -176,12 +176,13 @@ fun SourceScreen(
         }
         Spacer(Modifier.height(12.dp))
 
+        Box(Modifier.fillMaxSize()) {
         LazyVerticalGrid(
             columns = GridCells.Adaptive(minSize = 140.dp),
             state = gridState,
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier.fillMaxSize().padding(end = ScrollbarGutter),
         ) {
             items(model.mangas, key = { it.url }) { manga ->
                 MangaCard(
@@ -213,6 +214,8 @@ fun SourceScreen(
                     }
                 }
             }
+        }
+        GridScrollbar(gridState)
         }
     }
 }

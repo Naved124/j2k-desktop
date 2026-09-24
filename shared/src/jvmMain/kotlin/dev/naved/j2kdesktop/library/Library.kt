@@ -190,3 +190,38 @@ object ChapterFilters {
         return if (hidden.isEmpty()) chapters else chapters.filter { groupOf(it) !in hidden }
     }
 }
+
+/** How a manga's chapter list is sorted on its page (remembered per manga). */
+object ChapterSort {
+    enum class By(val label: String, val ascendingLabel: String, val descendingLabel: String) {
+        Source("Source order", "Oldest first", "Newest first"),
+        Number("Chapter number", "1 → last", "Last → 1"),
+        UploadDate("Upload date", "Oldest uploads first", "Newest uploads first"),
+    }
+
+    data class Sort(val by: By = By.Source, val descending: Boolean = true)
+
+    private val prefs get() = AndroidCompat.sharedPreferences("chapter_filters")
+
+    private fun key(sourceId: Long, url: String) = "sort_${sourceId}_$url"
+
+    fun get(sourceId: Long, url: String): Sort {
+        val raw = prefs.getString(key(sourceId, url), null) ?: return Sort()
+        val by = runCatching { By.valueOf(raw.substringBefore(':')) }.getOrDefault(By.Source)
+        return Sort(by, raw.substringAfter(':', "desc") != "asc")
+    }
+
+    fun set(sourceId: Long, url: String, sort: Sort) {
+        prefs.edit().putString(key(sourceId, url), "${sort.by.name}:${if (sort.descending) "desc" else "asc"}").apply()
+    }
+
+    /** [chapters] come newest first, as sources list them. */
+    fun <T : SChapter> apply(chapters: List<T>, sort: Sort): List<T> {
+        val ascending = when (sort.by) {
+            By.Source -> chapters.reversed()
+            By.Number -> chapters.reversed().sortedBy { if (it.chapter_number >= 0) it.chapter_number else Float.MAX_VALUE }
+            By.UploadDate -> chapters.reversed().sortedBy { it.date_upload }
+        }
+        return if (sort.descending) ascending.reversed() else ascending
+    }
+}

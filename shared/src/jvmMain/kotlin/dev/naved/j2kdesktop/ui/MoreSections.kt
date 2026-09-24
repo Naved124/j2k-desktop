@@ -26,6 +26,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import dev.naved.j2kdesktop.AppSettings
 import dev.naved.j2kdesktop.AppTheme
+import dev.naved.j2kdesktop.colors
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.draw.clip
 import dev.naved.j2kdesktop.backup.BackupManager
 import dev.naved.j2kdesktop.reader.ReadingMode
 import dev.naved.j2kdesktop.tracking.AniList
@@ -48,15 +52,33 @@ private fun Hint(text: String) {
 }
 
 @Composable
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 fun AppearanceAndReaderSettings() {
     Title("Appearance")
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-        Text("Theme")
+    Text("Theme")
+    Spacer(Modifier.height(6.dp))
+    androidx.compose.foundation.layout.FlowRow(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
         AppTheme.entries.forEach { theme ->
+            val scheme = theme.colors()
             FilterChip(
                 selected = AppSettings.theme == theme,
                 onClick = { AppSettings.changeTheme(theme) },
                 label = { Text(theme.label) },
+                leadingIcon = {
+                    // Swatch: background with the accent colour on it
+                    androidx.compose.foundation.layout.Box(
+                        Modifier
+                            .size(18.dp)
+                            .clip(androidx.compose.foundation.shape.CircleShape)
+                            .background(scheme.background)
+                            .padding(4.dp)
+                            .clip(androidx.compose.foundation.shape.CircleShape)
+                            .background(scheme.primary),
+                    )
+                },
             )
         }
     }

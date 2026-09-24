@@ -40,7 +40,9 @@ import java.io.File
 /** More: downloads queue, library update and browser settings, where things are stored. */
 @Composable
 fun MoreTab() {
-    LazyColumn(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    val listState = androidx.compose.foundation.lazy.rememberLazyListState()
+    androidx.compose.foundation.layout.Box(Modifier.fillMaxSize()) {
+    LazyColumn(state = listState, modifier = Modifier.fillMaxSize().padding(end = ScrollbarGutter), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         item {
             Text("More", style = MaterialTheme.typography.headlineMedium)
             Spacer(Modifier.height(16.dp))
@@ -169,6 +171,8 @@ fun MoreTab() {
             }
             Spacer(Modifier.height(24.dp))
         }
+    }
+    ListScrollbar(listState)
     }
 }
 

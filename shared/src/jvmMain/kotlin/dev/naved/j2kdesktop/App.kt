@@ -44,16 +44,19 @@ fun App() {
         }
     }
 
-    val colors = when (AppSettings.theme) {
-        AppTheme.Dark -> darkColorScheme()
-        AppTheme.Black -> darkColorScheme(
-            background = androidx.compose.ui.graphics.Color.Black,
-            surface = androidx.compose.ui.graphics.Color.Black,
-            surfaceContainer = androidx.compose.ui.graphics.Color(0xFF0E0E0E),
-        )
-        AppTheme.Light -> lightColorScheme()
-    }
+    val colors = AppSettings.theme.colors()
     MaterialTheme(colorScheme = colors) {
+      // Scrollbars in the theme's colours (the default ones are invisible on dark backgrounds)
+      androidx.compose.runtime.CompositionLocalProvider(
+          androidx.compose.foundation.LocalScrollbarStyle provides androidx.compose.foundation.ScrollbarStyle(
+              minimalHeight = 48.dp,
+              thickness = 10.dp,
+              shape = androidx.compose.foundation.shape.RoundedCornerShape(5.dp),
+              hoverDurationMillis = 250,
+              unhoverColor = colors.onSurface.copy(alpha = 0.25f),
+              hoverColor = colors.onSurface.copy(alpha = 0.6f),
+          ),
+      ) {
         var current by remember { mutableStateOf(Tab.Library) }
 
         Surface(Modifier.fillMaxSize()) {
@@ -87,6 +90,7 @@ fun App() {
             SnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter))
           }
         }
+      }
     }
 }
 

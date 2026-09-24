@@ -16,6 +16,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
@@ -51,6 +53,7 @@ import dev.naved.j2kdesktop.download.DownloadManager
 import dev.naved.j2kdesktop.library.Categories
 import dev.naved.j2kdesktop.library.ChapterCache
 import dev.naved.j2kdesktop.library.ChapterFilters
+import dev.naved.j2kdesktop.library.ChapterSort
 import dev.naved.j2kdesktop.library.Library
 import dev.naved.j2kdesktop.library.ReadProgress
 import dev.naved.j2kdesktop.reader.ReaderLauncher
@@ -132,6 +135,10 @@ fun MangaScreen(source: Source, manga: SManga, onBack: () -> Unit) {
     val visibleChapters = remember(chapters, hiddenGroups) {
         chapters.orEmpty().filter { ChapterFilters.groupOf(it) !in hiddenGroups }
     }
+    // How the list is shown (the reader always goes in reading order)
+    var sort by remember(source.id, manga.url) { mutableStateOf(ChapterSort.get(source.id, manga.url)) }
+    val displayChapters = remember(visibleChapters, sort) { ChapterSort.apply(visibleChapters, sort) }
+
     // Reading order (oldest first) for the reader and "continue"
     val ordered = remember(visibleChapters) { visibleChapters.reversed() }
     fun read(index: Int) {
@@ -147,7 +154,9 @@ fun MangaScreen(source: Source, manga: SManga, onBack: () -> Unit) {
         CategoriesDialog(source.id, manga.url, onDismiss = { categoriesDialog = false })
     }
 
-    LazyColumn(Modifier.fillMaxSize()) {
+    val listState = remember(manga.url) { LazyListState() }
+    Box(Modifier.fillMaxSize()) {
+    LazyColumn(state = listState, modifier = Modifier.fillMaxSize().padding(end = ScrollbarGutter)) {
         item {
             TextButton(onClick = onBack) { Text("← Back") }
             Spacer(Modifier.height(8.dp))
@@ -267,6 +276,46 @@ fun MangaScreen(source: Source, manga: SManga, onBack: () -> Unit) {
                     }
                     Spacer(Modifier.width(8.dp))
                 }
+                if (visibleChapters.size > 1) {
+                    Box {
+                        var menuOpen by remember { mutableStateOf(false) }
+                        OutlinedButton(onClick = { menuOpen = true }) {
+                            Text("Sort: ${sort.by.label} ${if (sort.descending) "↓" else "↑"}")
+                        }
+                        DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                            ChapterSort.By.entries.forEach { by ->
+                                DropdownMenuItem(
+                                    leadingIcon = { Text(if (sort.by == by) "●" else "○") },
+                                    text = { Text(by.label) },
+                                    onClick = {
+                                        // Picking the current one again flips the direction
+                                        val next = if (sort.by == by) sort.copy(descending = !sort.descending) else sort.copy(by = by)
+                                        sort = next
+                                        ChapterSort.set(source.id, manga.url, next)
+                                    },
+                                )
+                            }
+                            HorizontalDivider()
+                            DropdownMenuItem(
+                                leadingIcon = { Text(if (!sort.descending) "●" else "○") },
+                                text = { Text(sort.by.ascendingLabel) },
+                                onClick = {
+                                    sort = sort.copy(descending = false)
+                                    ChapterSort.set(source.id, manga.url, sort)
+                                },
+                            )
+                            DropdownMenuItem(
+                                leadingIcon = { Text(if (sort.descending) "●" else "○") },
+                                text = { Text(sort.by.descendingLabel) },
+                                onClick = {
+                                    sort = sort.copy(descending = true)
+                                    ChapterSort.set(source.id, manga.url, sort)
+                                },
+                            )
+                        }
+                    }
+                    Spacer(Modifier.width(8.dp))
+                }
                 if (visibleChapters.isNotEmpty()) {
                     Box {
                         var menuOpen by remember { mutableStateOf(false) }
@@ -290,9 +339,11 @@ fun MangaScreen(source: Source, manga: SManga, onBack: () -> Unit) {
             item { Text("Couldn't load: $it", color = MaterialTheme.colorScheme.error) }
         }
 
-        items(visibleChapters, key = { it.url }) { chapter ->
+        items(displayChapters, key = { it.url }) { chapter ->
             ChapterRow(source, details, chapter, ordered, onRead = { read(ordered.indexOf(chapter)) })
         }
+    }
+    ListScrollbar(listState)
     }
 }
 

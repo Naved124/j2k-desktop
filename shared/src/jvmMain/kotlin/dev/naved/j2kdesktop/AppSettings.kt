@@ -5,7 +5,18 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import dev.naved.j2kdesktop.compat.AndroidCompat
 
-enum class AppTheme(val label: String) { Dark("Dark"), Black("Pure black (OLED)"), Light("Light") }
+enum class AppTheme(val label: String) {
+    Dark("Default dark"),
+    Black("Pure black (OLED)"),
+    Tako("Tako"),
+    TokyoNight("Tokyo Night"),
+    YinYang("Yin & Yang"),
+    FlatLime("Flat Lime"),
+    MidnightDusk("Midnight Dusk"),
+    ChocolateStrawberry("Chocolate Strawberry"),
+    SapphireDusk("Sapphire Dusk"),
+    Light("Light"),
+}
 
 /** App-wide settings (More tab), saved in prefs/app.json. Compose-observable. */
 object AppSettings {
