@@ -16,6 +16,10 @@ pluginManagement {
 
 dependencyResolutionManagement {
     repositories {
+        // JitPack: only for Injekt (the DI library extensions are compiled against)
+        maven("https://jitpack.io") {
+            content { includeGroupByRegex("com\\.github\\..*") }
+        }
         google {
             mavenContent {
                 includeGroupAndSubgroups("androidx")
@@ -34,3 +38,4 @@ plugins {
 include(":desktopApp")
 include(":shared")
 include(":source-api")
+include(":android-compat")

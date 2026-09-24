@@ -40,12 +40,14 @@ import androidx.compose.ui.input.key.type
 import androidx.compose.ui.unit.dp
 import dev.naved.j2kdesktop.source.LocalSource
 import dev.naved.j2kdesktop.source.SourceManager
+import eu.kanade.tachiyomi.source.ConfigurableSource
 import eu.kanade.tachiyomi.source.model.SManga
 
 private sealed interface BrowseRoute {
     data object Home : BrowseRoute
     data class SourceRoute(val sourceId: Long) : BrowseRoute
     data class MangaRoute(val sourceId: Long, val manga: SManga) : BrowseRoute
+    data class SettingsRoute(val sourceId: Long) : BrowseRoute
 }
 
 /** The Browse tab: source list -> a source's grid -> a manga, with a back stack. */
@@ -69,6 +71,7 @@ fun BrowseTab() {
                 models.getOrPut(source.id) { BrowseModel(source, scope) }.switchListing(listing)
                 push(BrowseRoute.SourceRoute(source.id))
             },
+            onOpenSettings = { source -> push(BrowseRoute.SettingsRoute(source.id)) },
         )
 
         is BrowseRoute.SourceRoute -> {
@@ -90,6 +93,15 @@ fun BrowseTab() {
                 Text("Source not found")
             } else {
                 MangaScreen(source = source, manga = route.manga, onBack = { pop() })
+            }
+        }
+
+        is BrowseRoute.SettingsRoute -> {
+            val source = SourceManager.get(route.sourceId) as? ConfigurableSource
+            if (source == null) {
+                Text("Source not found")
+            } else {
+                SourceSettingsScreen(source = source, onBack = { pop() })
             }
         }
     }
@@ -172,7 +184,11 @@ fun SourceScreen(
             modifier = Modifier.fillMaxSize(),
         ) {
             items(model.mangas, key = { it.url }) { manga ->
-                MangaCard(manga, onClick = { onMangaClick(manga) })
+                MangaCard(
+                    manga,
+                    onClick = { onMangaClick(manga) },
+                    headers = (model.source as? eu.kanade.tachiyomi.source.online.HttpSource)?.headers,
+                )
             }
 
             val error = model.error

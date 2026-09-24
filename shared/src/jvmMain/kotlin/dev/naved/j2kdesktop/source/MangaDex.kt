@@ -30,6 +30,9 @@ class MangaDex : HttpSource() {
     override val baseUrl = "https://mangadex.org"
     override val supportsLatest = true
 
+    // Different id from the Keiyoushi MangaDex extension, so both can be listed side by side
+    override val versionId = 101
+
     private val apiUrl = "https://api.mangadex.org"
     private val json = Json { ignoreUnknownKeys = true }
 

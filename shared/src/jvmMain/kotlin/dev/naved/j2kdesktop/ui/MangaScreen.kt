@@ -72,7 +72,10 @@ fun MangaScreen(source: Source, manga: SManga, onBack: () -> Unit) {
 
             Row {
                 AsyncImage(
-                    model = details.thumbnail_url,
+                    model = rememberImageRequest(
+                        details.thumbnail_url,
+                        (source as? eu.kanade.tachiyomi.source.online.HttpSource)?.headers,
+                    ),
                     contentDescription = details.title,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier

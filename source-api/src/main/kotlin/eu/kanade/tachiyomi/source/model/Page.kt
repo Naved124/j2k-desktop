@@ -1,14 +1,16 @@
 package eu.kanade.tachiyomi.source.model
 
+import android.net.Uri
 import eu.kanade.tachiyomi.network.ProgressListener
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
-// TODO(phase 7): J2K's Page also takes `uri: android.net.Uri?` as a 4th parameter.
+// Same constructor as extensions-lib (4th param is android.net.Uri), so extension bytecode can call it.
 open class Page(
     val index: Int,
     val url: String = "",
     var imageUrl: String? = null,
+    var uri: Uri? = null,
 ) : ProgressListener {
     val number: Int
         get() = index + 1

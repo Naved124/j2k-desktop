@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
+    alias(libs.plugins.kotlinSerialization)
 }
 
 kotlin {
@@ -26,6 +27,18 @@ kotlin {
             implementation(project(":source-api"))
             implementation(libs.coil.compose)
             implementation(libs.coil.networkOkhttp)
+
+            // Extensions: DI they expect, APK reading, dex -> jar conversion
+            implementation(libs.injekt.core)
+            implementation(libs.apk.parser)
+            implementation(libs.dex2jar.translator)
+            implementation(libs.kotlinx.serializationProtobuf)
+
+            // Libraries the Android app normally provides to extensions at runtime
+            implementation(libs.kotlinx.serializationJsonOkio)
+            implementation(libs.okhttpBrotli)
+            implementation(libs.okhttpZstd)
+            implementation(libs.orgJson)
 
         }
     }

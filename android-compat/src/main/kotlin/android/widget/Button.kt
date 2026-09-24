@@ -1,0 +1,5 @@
+package android.widget
+
+import android.content.Context
+
+open class Button(context: Context?) : TextView(context)

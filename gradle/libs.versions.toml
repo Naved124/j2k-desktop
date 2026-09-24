@@ -1,4 +1,7 @@
 [versions]
+apkParser = "2.6.10"
+dex2jar = "2.4.38"
+orgJson = "20240303"
 coil = "3.6.3"
 okhttp = "5.5.0"
 jsoup = "1.23.2"
@@ -31,8 +34,17 @@ compose-ui = { module = "org.jetbrains.compose.ui:ui", version.ref = "composeMul
 compose-components-resources = { module = "org.jetbrains.compose.components:components-resources", version.ref = "composeMultiplatform" }
 compose-uiToolingPreview = { module = "org.jetbrains.compose.ui:ui-tooling-preview", version.ref = "composeMultiplatform" }
 kotlinx-coroutinesSwing = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-swing", version.ref = "kotlinx-coroutines" }
+injekt-core = { module = "com.github.null2264.injekt:injekt-core", version = "4135455a2a" }
+kotlinx-serializationJsonOkio = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json-okio", version.ref = "kotlinx-serialization" }
+kotlinx-serializationProtobuf = { module = "org.jetbrains.kotlinx:kotlinx-serialization-protobuf", version.ref = "kotlinx-serialization" }
+okhttpBrotli = { module = "com.squareup.okhttp3:okhttp-brotli", version.ref = "okhttp" }
+okhttpZstd = { module = "com.squareup.okhttp3:okhttp-zstd", version.ref = "okhttp" }
+orgJson = { module = "org.json:json", version.ref = "orgJson" }
+apk-parser = { module = "net.dongliu:apk-parser", version.ref = "apkParser" }
+dex2jar-translator = { module = "de.femtopedia.dex2jar:dex-translator", version.ref = "dex2jar" }
 
 [plugins]
+kotlinSerialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 composeMultiplatform = { id = "org.jetbrains.compose", version.ref = "composeMultiplatform" }
 composeCompiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 kotlinJvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }

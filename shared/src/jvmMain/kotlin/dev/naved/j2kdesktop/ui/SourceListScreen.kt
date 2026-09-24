@@ -31,11 +31,15 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import dev.naved.j2kdesktop.source.SourceManager
 import eu.kanade.tachiyomi.source.CatalogueSource
+import eu.kanade.tachiyomi.source.ConfigurableSource
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SourceListScreen(onOpenSource: (CatalogueSource, Listing) -> Unit) {
+fun SourceListScreen(
+    onOpenSource: (CatalogueSource, Listing) -> Unit,
+    onOpenSettings: (CatalogueSource) -> Unit,
+) {
     var showExtensions by remember { mutableStateOf(false) }
 
     Column(Modifier.fillMaxSize()) {
@@ -48,16 +52,7 @@ fun SourceListScreen(onOpenSource: (CatalogueSource, Listing) -> Unit) {
         Spacer(Modifier.height(8.dp))
 
         if (showExtensions) {
-            Column(Modifier.padding(top = 16.dp)) {
-                Text("No extensions yet", style = MaterialTheme.typography.titleMedium)
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    "Extension repos and installing extensions come in phase 7. " +
-                        "Installed extensions will show up under Sources automatically.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
+            ExtensionsScreen()
         } else {
             // Grouped by language like J2K, with "Other" (Local manga) first
             val groups = SourceManager.catalogueSources
@@ -85,6 +80,7 @@ fun SourceListScreen(onOpenSource: (CatalogueSource, Listing) -> Unit) {
                             source = source,
                             onOpen = { onOpenSource(source, Listing.Popular) },
                             onLatest = { onOpenSource(source, Listing.Latest) },
+                            onSettings = { onOpenSettings(source) },
                         )
                     }
                 }
@@ -94,7 +90,12 @@ fun SourceListScreen(onOpenSource: (CatalogueSource, Listing) -> Unit) {
 }
 
 @Composable
-private fun SourceRow(source: CatalogueSource, onOpen: () -> Unit, onLatest: () -> Unit) {
+private fun SourceRow(
+    source: CatalogueSource,
+    onOpen: () -> Unit,
+    onLatest: () -> Unit,
+    onSettings: () -> Unit,
+) {
     ListItem(
         leadingContent = {
             // Letter icon for now; extension icons come with phase 7
@@ -115,7 +116,10 @@ private fun SourceRow(source: CatalogueSource, onOpen: () -> Unit, onLatest: () 
         headlineContent = { Text(source.name) },
         supportingContent = { Text(languageName(source.lang)) },
         trailingContent = {
-            if (source.supportsLatest) TextButton(onClick = onLatest) { Text("Latest") }
+            Row {
+                if (source is ConfigurableSource) TextButton(onClick = onSettings) { Text("Settings") }
+                if (source.supportsLatest) TextButton(onClick = onLatest) { Text("Latest") }
+            }
         },
         modifier = Modifier.clickable(onClick = onOpen),
     )

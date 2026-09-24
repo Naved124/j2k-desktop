@@ -1,5 +1,7 @@
 package eu.kanade.tachiyomi.network
 
+import eu.kanade.tachiyomi.network.interceptor.CloudflareInterceptor
+import eu.kanade.tachiyomi.network.interceptor.UncaughtExceptionInterceptor
 import eu.kanade.tachiyomi.network.interceptor.UserAgentInterceptor
 import okhttp3.Cache
 import okhttp3.OkHttpClient
@@ -15,7 +17,10 @@ class NetworkHelper(cacheDir: File) {
         .readTimeout(30, TimeUnit.SECONDS)
         .callTimeout(2, TimeUnit.MINUTES)
         .cache(Cache(File(cacheDir, "network_cache"), 5L * 1024 * 1024))
+        // Same interceptors (and order) as the Android app; Keiyoushi extensions check for them
+        .addInterceptor(UncaughtExceptionInterceptor())
         .addInterceptor(UserAgentInterceptor { defaultUserAgent })
+        .addInterceptor(CloudflareInterceptor())
         .build()
 
     @Deprecated("The regular client handles Cloudflare by default")

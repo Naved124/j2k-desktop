@@ -23,7 +23,7 @@ import coil3.compose.AsyncImage
 import eu.kanade.tachiyomi.source.model.SManga
 
 @Composable
-fun MangaCard(manga: SManga, onClick: () -> Unit) {
+fun MangaCard(manga: SManga, onClick: () -> Unit, headers: okhttp3.Headers? = null) {
     Box(
         Modifier
             .aspectRatio(2f / 3f)
@@ -32,7 +32,7 @@ fun MangaCard(manga: SManga, onClick: () -> Unit) {
             .clickable(onClick = onClick),
     ) {
         AsyncImage(
-            model = manga.thumbnail_url,
+            model = rememberImageRequest(manga.thumbnail_url, headers),
             contentDescription = manga.title,
             contentScale = ContentScale.Crop,
             modifier = Modifier.fillMaxSize(),

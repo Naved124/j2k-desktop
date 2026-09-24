@@ -6,7 +6,7 @@ import eu.kanade.tachiyomi.source.Source
 
 /**
  * Every source the app knows about (J2K's SourceManager).
- * Built-ins are registered here; installed extensions will register in phase 7.
+ * Built-ins are registered here; installed extensions are added by ExtensionManager.
  * It's Compose state, so the Browse list updates by itself when sources change.
  */
 object SourceManager {
@@ -18,8 +18,10 @@ object SourceManager {
         register(MangaDex())
     }
 
+    /** Adds a source, replacing any existing one with the same id (e.g. an updated extension). */
     fun register(source: Source) {
-        if (_sources.none { it.id == source.id }) _sources.add(source)
+        val index = _sources.indexOfFirst { it.id == source.id }
+        if (index >= 0) _sources[index] = source else _sources.add(source)
     }
 
     fun unregister(id: Long) {

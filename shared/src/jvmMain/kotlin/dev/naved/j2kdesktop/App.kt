@@ -3,11 +3,15 @@ package dev.naved.j2kdesktop
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import coil3.compose.setSingletonImageLoaderFactory
 import dev.naved.j2kdesktop.ui.BrowseTab
 import dev.naved.j2kdesktop.ui.buildImageLoader
+import dev.naved.j2kdesktop.compat.AndroidCompat
+import dev.naved.j2kdesktop.extension.ExtensionManager
+import kotlinx.coroutines.launch
 
 enum class Tab(val label: String, val glyph: String) {
     Library("Library", "▤"),
@@ -19,10 +23,20 @@ enum class Tab(val label: String, val glyph: String) {
 @Composable
 fun App() {
     setSingletonImageLoaderFactory { context -> buildImageLoader(context) }
+
+    // Extension toasts show up as snackbars; installed extensions load in the background
+    val snackbar = remember { SnackbarHostState() }
+    LaunchedEffect(Unit) {
+        val scope = this
+        AndroidCompat.toastHandler = { msg -> scope.launch { snackbar.showSnackbar(msg) } }
+        ExtensionManager.start(scope)
+    }
+
     MaterialTheme(colorScheme = darkColorScheme()) {
         var current by remember { mutableStateOf(Tab.Library) }
 
         Surface(Modifier.fillMaxSize()) {
+          Box(Modifier.fillMaxSize()) {
             Row(Modifier.fillMaxSize()) {
                 NavigationRail {
                     Spacer(Modifier.height(12.dp))
@@ -45,6 +59,8 @@ fun App() {
                     }
                 }
             }
+            SnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter))
+          }
         }
     }
 }
