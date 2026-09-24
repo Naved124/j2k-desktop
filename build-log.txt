@@ -1,0 +1,43 @@
+Reusing configuration cache.
+> Task :desktopApp:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :desktopApp:generateComposeResClass SKIPPED
+> Task :source-api:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :shared:copyNonXmlValueResourcesForJvmMain NO-SOURCE
+> Task :shared:generateComposeResClass UP-TO-DATE
+> Task :shared:kmpPartiallyResolvedDependenciesChecker
+> Task :shared:generateExpectResourceCollectorsForCommonMain UP-TO-DATE
+> Task :desktopApp:prepareAppResources NO-SOURCE
+> Task :shared:convertXmlValueResourcesForJvmMain NO-SOURCE
+> Task :shared:copyNonXmlValueResourcesForCommonMain UP-TO-DATE
+> Task :source-api:processResources NO-SOURCE
+> Task :shared:checkJvmMainComposeLibrariesCompatibility
+> Task :shared:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :shared:convertXmlValueResourcesForCommonMain NO-SOURCE
+> Task :shared:prepareComposeResourcesTaskForCommonMain UP-TO-DATE
+> Task :desktopApp:copyNonXmlValueResourcesForMain NO-SOURCE
+> Task :shared:prepareComposeResourcesTaskForJvmMain NO-SOURCE
+> Task :desktopApp:convertXmlValueResourcesForMain NO-SOURCE
+> Task :shared:generateResourceAccessorsForCommonMain UP-TO-DATE
+> Task :shared:generateResourceAccessorsForJvmMain NO-SOURCE
+> Task :shared:assembleJvmMainResources UP-TO-DATE
+> Task :desktopApp:prepareComposeResourcesTaskForMain NO-SOURCE
+> Task :shared:generateActualResourceCollectorsForJvmMain UP-TO-DATE
+> Task :desktopApp:generateResourceAccessorsForMain SKIPPED
+> Task :desktopApp:generateActualResourceCollectorsForMain SKIPPED
+> Task :shared:jvmProcessResources UP-TO-DATE
+> Task :desktopApp:assembleMainResources UP-TO-DATE
+> Task :source-api:compileKotlin UP-TO-DATE
+> Task :shared:processJvmMainResources SKIPPED
+> Task :desktopApp:processResources UP-TO-DATE
+> Task :source-api:compileJava NO-SOURCE
+> Task :source-api:classes UP-TO-DATE
+> Task :source-api:jar UP-TO-DATE
+> Task :shared:compileKotlinJvm
+> Task :shared:compileJvmMainJava NO-SOURCE
+> Task :shared:jvmMainClasses
+> Task :shared:jvmJar
+> Task :desktopApp:compileKotlin
+> Task :desktopApp:compileJava NO-SOURCE
+> Task :desktopApp:classes UP-TO-DATE
+> Task :desktopApp:jar UP-TO-DATE
+> Task :desktopApp:run
