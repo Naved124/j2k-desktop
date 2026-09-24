@@ -29,6 +29,7 @@ object ReaderIcons {
                 "M12,15.6c-1.98,0 -3.6,-1.62 -3.6,-3.6s1.62,-3.6 3.6,-3.6s3.6,1.62 3.6,3.6S13.98,15.6 12,15.6z",
         )
     }
+    val Minimize by lazy { icon("minimize", "M6,19h12v2H6z") }
     val Back by lazy { icon("back", "M20,11H7.83l5.59,-5.59L12,4l-8,8 8,8 1.41,-1.41L7.83,13H20v-2z") }
     val SkipPrevious by lazy { icon("skip_previous", "M6,6h2v12H6zM9.5,12l8.5,6V6z") }
     val SkipNext by lazy { icon("skip_next", "M6,18l8.5,-6L6,6v12zM16,6v12h2V6h-2z") }

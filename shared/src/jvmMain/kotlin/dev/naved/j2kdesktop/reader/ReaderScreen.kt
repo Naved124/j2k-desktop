@@ -50,6 +50,7 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.geometry.Offset
@@ -130,7 +131,10 @@ fun ReaderScreen(request: ReaderRequest, onClose: () -> Unit) {
     // Bars: a click shows them, reading on (scroll, swipe, turn) hides them
     var barsVisible by remember { mutableStateOf(false) }
     var settingsOpen by remember { mutableStateOf(false) }
-    val uiShown = barsVisible || settingsOpen
+    // Fullscreen: moving the mouse to the top edge slides down an exit bar, like a browser
+    var edgeBar by remember { mutableStateOf(false) }
+    LaunchedEffect(ReaderLauncher.isFullscreen) { if (!ReaderLauncher.isFullscreen) edgeBar = false }
+    val uiShown = barsVisible || settingsOpen || edgeBar
 
     // Hide the cursor after 2 s without movement
     var lastMove by remember { mutableStateOf(System.currentTimeMillis()) }
@@ -247,7 +251,17 @@ fun ReaderScreen(request: ReaderRequest, onClose: () -> Unit) {
             .focusable()
             .onPreviewKeyEvent(::onKey)
             .pointerHoverIcon(if (cursorHidden && !uiShown) BlankCursor else PointerIcon.Default)
-            .onPointerEvent(PointerEventType.Move) { lastMove = System.currentTimeMillis() },
+            .onPointerEvent(PointerEventType.Move) { event ->
+                lastMove = System.currentTimeMillis()
+                val y = event.changes.firstOrNull()?.position?.y ?: return@onPointerEvent
+                if (ReaderLauncher.isFullscreen && !barsVisible) {
+                    if (y <= 3f) {
+                        edgeBar = true
+                    } else if (edgeBar && y > 90.dp.toPx()) {
+                        edgeBar = false
+                    }
+                }
+            },
     ) {
         // The reading area. Its own box, so scrolling over the settings sheet doesn't turn pages.
         Box(
@@ -333,6 +347,22 @@ fun ReaderScreen(request: ReaderRequest, onClose: () -> Unit) {
         if (barsVisible) {
             TopBar(model, onClose, Modifier.align(Alignment.TopCenter))
             StatusBar(model, onSettings = { settingsOpen = !settingsOpen }, Modifier.align(Alignment.BottomCenter))
+        }
+
+        androidx.compose.animation.AnimatedVisibility(
+            visible = edgeBar && !barsVisible,
+            enter = androidx.compose.animation.slideInVertically { -it } + androidx.compose.animation.fadeIn(),
+            exit = androidx.compose.animation.slideOutVertically { -it } + androidx.compose.animation.fadeOut(),
+            modifier = Modifier.align(Alignment.TopCenter),
+        ) {
+            FullscreenEdgeBar(
+                model,
+                onExit = {
+                    edgeBar = false
+                    ReaderLauncher.isFullscreen = false
+                },
+                onClose = onClose,
+            )
         }
 
         if (settingsOpen) {
@@ -592,6 +622,41 @@ private fun TopBar(model: ReaderModel, onClose: () -> Unit, modifier: Modifier) 
             if (ReaderLauncher.isFullscreen) ReaderIcons.FullscreenExit else ReaderIcons.Fullscreen,
             "Fullscreen (F)",
         ) { ReaderLauncher.isFullscreen = !ReaderLauncher.isFullscreen }
+    }
+}
+
+/** Fullscreen's exit bar: slides down when the mouse reaches the top edge of the screen. */
+@Composable
+private fun FullscreenEdgeBar(model: ReaderModel, onExit: () -> Unit, onClose: () -> Unit) {
+    Row(
+        Modifier
+            .padding(top = 10.dp)
+            .clip(RoundedCornerShape(24.dp))
+            .background(BarColor)
+            .eatTaps()
+            .padding(start = 18.dp, end = 6.dp, top = 4.dp, bottom = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        Text(
+            listOfNotNull(
+                runCatching { model.manga.title }.getOrNull(),
+                model.chapters.getOrNull(model.currentChapterIndex)?.name,
+            ).joinToString("  ·  "),
+            color = Color.White,
+            fontSize = 13.sp,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.widthIn(max = 460.dp),
+        )
+        Spacer(Modifier.width(6.dp))
+        TextButton(onClick = onExit) {
+            Icon(ReaderIcons.FullscreenExit, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
+            Spacer(Modifier.width(6.dp))
+            Text("Exit full screen (F)", color = Color.White, fontSize = 13.sp)
+        }
+        ReaderLauncher.minimizeWindow?.let { minimize -> BarIcon(ReaderIcons.Minimize, "Minimize", onClick = minimize) }
+        BarIcon(ReaderIcons.Close, "Close reader (Esc)", onClick = onClose)
     }
 }
 

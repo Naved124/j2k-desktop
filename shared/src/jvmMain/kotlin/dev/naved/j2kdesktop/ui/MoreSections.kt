@@ -132,6 +132,17 @@ fun AppearanceAndReaderSettings() {
             AppSettings.autoWebtoon = it
         })
     }
+    var readerFullscreen by remember { mutableStateOf(AppSettings.readerFullscreen) }
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Column(Modifier.weight(1f)) {
+            Text("Open the reader in fullscreen")
+            Hint("Move the mouse to the top edge for the exit bar, or press F / Esc")
+        }
+        Switch(checked = readerFullscreen, onCheckedChange = {
+            readerFullscreen = it
+            AppSettings.readerFullscreen = it
+        })
+    }
 }
 
 @Composable

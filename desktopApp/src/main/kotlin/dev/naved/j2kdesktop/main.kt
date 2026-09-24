@@ -47,33 +47,49 @@ fun main(args: Array<String>) {
                     windowState.placement = if (fullscreen) WindowPlacement.Fullscreen else WindowPlacement.Floating
                     return@LaunchedEffect
                 }
-                // Windows keeps the title bar in Java's fullscreen mode. Instead, make the window cover
-                // the whole monitor with its title bar and borders pushed just outside the screen.
+                // Java's own fullscreen keeps the title bar on Windows, so do it like a browser does
                 val frame = window
-                if (fullscreen) {
-                    savedBounds = frame.bounds
-                    savedState = frame.extendedState
-                    frame.extendedState = Frame.NORMAL
-                    val screen = frame.graphicsConfiguration.bounds
-                    val insets = frame.insets
-                    frame.setBounds(
-                        screen.x - insets.left,
-                        screen.y - insets.top,
-                        screen.width + insets.left + insets.right,
-                        screen.height + insets.top + insets.bottom,
-                    )
-                    // Above the taskbar too
-                    frame.isAlwaysOnTop = true
-                    frame.toFront()
-                } else {
-                    val bounds = savedBounds ?: return@LaunchedEffect // wasn't fullscreen (app start)
-                    frame.isAlwaysOnTop = false
-                    frame.bounds = bounds
-                    frame.extendedState = savedState
-                    savedBounds = null
+                try {
+                    if (fullscreen) WindowsFullscreen.enter(frame) else WindowsFullscreen.exit(frame)
+                } catch (e: Throwable) {
+                    e.printStackTrace()
+                    fallbackFullscreen(frame, fullscreen)
                 }
+            }
+            // The reader's top-edge bar has a Minimize button (there's no title bar in fullscreen)
+            LaunchedEffect(Unit) {
+                ReaderLauncher.minimizeWindow = { window.extendedState = window.extendedState or Frame.ICONIFIED }
             }
             App()
         }
+    }
+}
+
+/**
+ * Fallback if the Win32 calls fail: make the window cover the monitor with its title bar and
+ * borders pushed just outside the screen.
+ */
+private fun fallbackFullscreen(frame: java.awt.Window, fullscreen: Boolean) {
+    val f = frame as? Frame ?: return
+    if (fullscreen) {
+        savedBounds = f.bounds
+        savedState = f.extendedState
+        f.extendedState = Frame.NORMAL
+        val screen = f.graphicsConfiguration.bounds
+        val insets = f.insets
+        f.setBounds(
+            screen.x - insets.left,
+            screen.y - insets.top,
+            screen.width + insets.left + insets.right,
+            screen.height + insets.top + insets.bottom,
+        )
+        f.isAlwaysOnTop = true
+        f.toFront()
+    } else {
+        val bounds = savedBounds ?: return
+        f.isAlwaysOnTop = false
+        f.bounds = bounds
+        f.extendedState = savedState
+        savedBounds = null
     }
 }

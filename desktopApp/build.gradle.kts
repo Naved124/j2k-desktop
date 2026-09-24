@@ -11,12 +11,14 @@ dependencies {
 
     implementation(compose.desktop.currentOs)
     implementation(libs.kotlinx.coroutinesSwing)
+    // Windows: real borderless fullscreen for the reader (Win32 calls)
+    implementation(libs.jna.platform)
 
     implementation(libs.compose.uiToolingPreview)
 }
 
 // Release version: ./gradlew ... -PappVersion=1.2.0 (the GitHub release workflow passes the tag)
-val appVersion = (findProperty("appVersion") as String?)?.removePrefix("v") ?: "1.0.3"
+val appVersion = (findProperty("appVersion") as String?)?.removePrefix("v") ?: "1.0.4"
 
 compose.desktop {
     application {

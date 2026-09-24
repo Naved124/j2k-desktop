@@ -22,6 +22,8 @@ object ReaderLauncher {
 
     fun open(request: ReaderRequest) {
         this.request = request
+        // Like a browser's fullscreen: the reader takes the whole screen (More → Reader to turn off)
+        if (dev.naved.j2kdesktop.AppSettings.readerFullscreen) isFullscreen = true
     }
 
     fun close() {
@@ -31,4 +33,7 @@ object ReaderLauncher {
 
     /** main.kt watches this and switches the window between fullscreen and normal. */
     var isFullscreen by mutableStateOf(false)
+
+    /** Set by main.kt: minimizes the window (fullscreen has no title bar to do it from). */
+    var minimizeWindow: (() -> Unit)? = null
 }

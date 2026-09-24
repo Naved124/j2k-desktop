@@ -69,6 +69,11 @@ object AppSettings {
         get() = prefs.getBoolean("auto_webtoon", true)
         set(value) = prefs.edit().putBoolean("auto_webtoon", value).apply()
 
+    /** Open the reader in fullscreen (the window's title bar comes back when you leave the reader). */
+    var readerFullscreen: Boolean
+        get() = prefs.getBoolean("reader_fullscreen", true)
+        set(value) = prefs.edit().putBoolean("reader_fullscreen", value).apply()
+
     var defaultRightToLeft: Boolean
         get() = prefs.getBoolean("default_rtl", true)
         set(value) = prefs.edit().putBoolean("default_rtl", value).apply()
