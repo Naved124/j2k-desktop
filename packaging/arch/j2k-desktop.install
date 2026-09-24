@@ -1,0 +1,8 @@
+post_install() {
+  update-desktop-database -q /usr/share/applications 2>/dev/null || true
+  gtk-update-icon-cache -q -t -f /usr/share/icons/hicolor 2>/dev/null || true
+  echo ":: To make tachiyomi:// and mihon:// links open J2K Desktop for your user, run:"
+  echo "   xdg-mime default j2k-desktop.desktop x-scheme-handler/tachiyomi x-scheme-handler/mihon"
+}
+post_upgrade() { post_install; }
+post_remove() { update-desktop-database -q /usr/share/applications 2>/dev/null || true; }

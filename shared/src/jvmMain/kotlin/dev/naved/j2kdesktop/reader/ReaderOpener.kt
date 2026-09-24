@@ -4,6 +4,7 @@ import dev.naved.j2kdesktop.library.ChapterCache
 import dev.naved.j2kdesktop.library.ChapterFilters
 import dev.naved.j2kdesktop.library.Library
 import dev.naved.j2kdesktop.library.ReadProgress
+import dev.naved.j2kdesktop.source.MangaCalls
 import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
@@ -17,9 +18,7 @@ object ReaderOpener {
     /** The chapter list (newest first); the saved list if the source can't be reached. */
     suspend fun chapters(source: Source, manga: SManga): List<SChapter> {
         val chapters = try {
-            withContext(Dispatchers.IO) {
-                source.getMangaUpdate(manga, emptyList(), fetchDetails = false, fetchChapters = true).chapters
-            }
+            MangaCalls.update(source, manga, fetchDetails = false, fetchChapters = true).chapters
         } catch (e: CancellationException) {
             throw e
         } catch (e: Throwable) {

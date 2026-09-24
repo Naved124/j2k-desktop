@@ -3,6 +3,7 @@ package dev.naved.j2kdesktop.library
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import dev.naved.j2kdesktop.source.MangaCalls
 import dev.naved.j2kdesktop.source.SourceManager
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -54,9 +55,7 @@ object LibraryUpdater {
                             } else {
                                 try {
                                     val manga = entry.toSManga()
-                                    val update = withContext(Dispatchers.IO) {
-                                        source.getMangaUpdate(manga, emptyList(), fetchDetails = false, fetchChapters = true)
-                                    }
+                                    val update = MangaCalls.update(source, manga, fetchDetails = false, fetchChapters = true)
                                     val found = ChapterCache.put(entry.sourceId, entry.url, update.chapters)
                                     val hidden = ChapterFilters.hiddenGroups(entry.sourceId, entry.url)
                                     val wanted = found.filter { it.scanlator?.trim().orEmpty() !in hidden }

@@ -9,6 +9,17 @@ import coil3.network.okhttp.OkHttpNetworkFetcherFactory
 import eu.kanade.tachiyomi.network.NetworkHelper
 import java.io.File
 
+/** The app's image loader (covers), kept so More → "Clear image cache" can reach it. */
+object ImageLoaderHolder {
+    @Volatile
+    var loader: ImageLoader? = null
+
+    fun clearCache() {
+        loader?.memoryCache?.clear()
+        loader?.diskCache?.clear()
+    }
+}
+
 fun buildImageLoader(context: PlatformContext): ImageLoader =
     ImageLoader.Builder(context)
         .components {
@@ -16,11 +27,12 @@ fun buildImageLoader(context: PlatformContext): ImageLoader =
         }
         .diskCache {
             DiskCache.Builder()
-                .directory(File(System.getProperty("user.home"), ".cache/j2k-desktop/covers"))
+                .directory(File(dev.naved.j2kdesktop.compat.AppDirs.cache, "covers"))
                 .maxSizeBytes(250L * 1024 * 1024)
                 .build()
         }
         .build()
+        .also { ImageLoaderHolder.loader = it }
 /**
  * Many sites refuse cover requests without their Referer/User-Agent, so covers are
  * requested with the source's own headers (like the Android app does).

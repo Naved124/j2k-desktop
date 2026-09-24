@@ -27,7 +27,7 @@ class LocalSource(
     override val lang = "other"
     override val supportsLatest = true
 
-    private val extractDir = File(System.getProperty("user.home"), ".cache/j2k-desktop/local-pages")
+    private val extractDir = File(dev.naved.j2kdesktop.compat.AppDirs.cache, "local-pages")
 
     init {
         rootDir.mkdirs()

@@ -27,6 +27,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import dev.naved.j2kdesktop.AppSettings
 import dev.naved.j2kdesktop.browser.Browser
 import dev.naved.j2kdesktop.browser.BrowserLocator
 import dev.naved.j2kdesktop.browser.CookieStore
@@ -35,14 +36,6 @@ import dev.naved.j2kdesktop.compat.AppDirs
 import dev.naved.j2kdesktop.download.DownloadManager
 import dev.naved.j2kdesktop.library.LibraryUpdater
 import java.io.File
-
-object AppSettings {
-    private val prefs get() = AndroidCompat.sharedPreferences("app")
-
-    var updateOnStart: Boolean
-        get() = prefs.getBoolean("update_on_start", true)
-        set(value) = prefs.edit().putBoolean("update_on_start", value).apply()
-}
 
 /** More: downloads queue, library update and browser settings, where things are stored. */
 @Composable
@@ -128,6 +121,15 @@ fun MoreTab() {
             }
 
             Spacer(Modifier.height(16.dp))
+            AppearanceAndReaderSettings()
+
+            Spacer(Modifier.height(16.dp))
+            BackupSection()
+
+            Spacer(Modifier.height(16.dp))
+            TrackingSection()
+
+            Spacer(Modifier.height(16.dp))
             SectionTitle("Browser (Cloudflare and WebView sources)")
             Text("Using: ${BrowserLocator.executable ?: "none found. Install Chromium, Chrome, Brave or Edge"}")
             Text(
@@ -148,6 +150,15 @@ fun MoreTab() {
 
             Spacer(Modifier.height(16.dp))
             SectionTitle("Storage")
+            var cacheCleared by remember { mutableStateOf(false) }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                OutlinedButton(onClick = {
+                    ImageLoaderHolder.clearCache()
+                    cacheCleared = true
+                }) { Text("Clear cover cache") }
+                Spacer(Modifier.width(12.dp))
+                if (cacheCleared) Text("Cleared", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("App data (library, progress, extensions): ${AppDirs.data.path}", modifier = Modifier.weight(1f))
                 TextButton(onClick = { openFolder(AppDirs.data) }) { Text("Open") }

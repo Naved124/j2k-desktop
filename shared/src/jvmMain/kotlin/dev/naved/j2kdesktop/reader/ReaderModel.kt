@@ -54,7 +54,7 @@ class ReaderModel(
 
     var mode by mutableStateOf(loadMode())
         private set
-    var rightToLeft by mutableStateOf(prefs.getBoolean("rtl_$mangaKey", true))
+    var rightToLeft by mutableStateOf(prefs.getBoolean("rtl_$mangaKey", dev.naved.j2kdesktop.AppSettings.defaultRightToLeft))
         private set
     var spread by mutableStateOf(prefs.getBoolean("spread", false))
         private set
@@ -408,12 +408,11 @@ class ReaderModel(
         prefs.getString("mode_$mangaKey", null)?.let { saved ->
             return runCatching { ReadingMode.valueOf(saved) }.getOrDefault(ReadingMode.Paged)
         }
-        // First time: long-strip series open as webtoon, everything else as pages
+        // First time: long-strip series open as webtoon, everything else in your default mode
         val genre = manga.genre.orEmpty().lowercase()
-        return if (listOf("long strip", "webtoon", "web comic", "manhwa").any { it in genre }) {
-            ReadingMode.Webtoon
-        } else {
-            ReadingMode.Paged
-        }
+        val longStrip = listOf("long strip", "webtoon", "web comic", "manhwa").any { it in genre }
+        if (longStrip && dev.naved.j2kdesktop.AppSettings.autoWebtoon) return ReadingMode.Webtoon
+        return runCatching { ReadingMode.valueOf(dev.naved.j2kdesktop.AppSettings.defaultReadingMode) }
+            .getOrDefault(ReadingMode.Paged)
     }
 }

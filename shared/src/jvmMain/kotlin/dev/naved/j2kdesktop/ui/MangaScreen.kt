@@ -55,6 +55,7 @@ import dev.naved.j2kdesktop.library.Library
 import dev.naved.j2kdesktop.library.ReadProgress
 import dev.naved.j2kdesktop.reader.ReaderLauncher
 import dev.naved.j2kdesktop.reader.ReaderRequest
+import dev.naved.j2kdesktop.source.MangaCalls
 import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
@@ -89,9 +90,7 @@ fun MangaScreen(source: Source, manga: SManga, onBack: () -> Unit) {
         }
         try {
             // Newer extensions (Keiyoushi's KeiSource) only implement getMangaUpdate: details + chapters in one call.
-            val update = withContext(Dispatchers.IO) {
-                source.getMangaUpdate(manga, emptyList(), fetchDetails = true, fetchChapters = true)
-            }
+            val update = MangaCalls.update(source, manga, fetchDetails = true, fetchChapters = true)
             details = merge(update.manga)
             gotChapters(update.chapters)
             Library.refresh(source.id, details)
@@ -103,12 +102,11 @@ fun MangaScreen(source: Source, manga: SManga, onBack: () -> Unit) {
             try {
                 coroutineScope {
                     launch {
-                        runCatching {
-                            withContext(Dispatchers.IO) { source.getMangaUpdate(manga, emptyList(), true, false) }
-                        }.getOrNull()?.let { details = merge(it.manga) }
+                        runCatching { MangaCalls.update(source, manga, true, false) }
+                            .getOrNull()?.let { details = merge(it.manga) }
                     }
                     launch {
-                        val list = withContext(Dispatchers.IO) { source.getMangaUpdate(manga, emptyList(), false, true).chapters }
+                        val list = MangaCalls.update(source, manga, false, true).chapters
                         gotChapters(list)
                     }
                 }
@@ -141,6 +139,10 @@ fun MangaScreen(source: Source, manga: SManga, onBack: () -> Unit) {
     }
 
     var categoriesDialog by remember { mutableStateOf(false) }
+    var trackingDialog by remember { mutableStateOf(false) }
+    if (trackingDialog) {
+        TrackingDialog(source.id, details, chapters.orEmpty(), onDismiss = { trackingDialog = false })
+    }
     if (categoriesDialog) {
         CategoriesDialog(source.id, manga.url, onDismiss = { categoriesDialog = false })
     }
@@ -204,6 +206,7 @@ fun MangaScreen(source: Source, manga: SManga, onBack: () -> Unit) {
                         }
 
                         if (ordered.isNotEmpty()) DownloadMenuButton(source, details, ordered)
+                        OutlinedButton(onClick = { trackingDialog = true }) { Text(trackingLabel(source.id, manga.url)) }
                     }
                 }
             }

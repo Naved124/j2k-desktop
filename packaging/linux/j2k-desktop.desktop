@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Name=J2K Desktop
+GenericName=Manga reader
+Comment=TachiyomiJ2K-style manga reader
+Exec=j2k-desktop %u
+Icon=j2k-desktop
+Terminal=false
+Categories=Graphics;Viewer;
+Keywords=manga;comics;reader;tachiyomi;
+MimeType=x-scheme-handler/tachiyomi;x-scheme-handler/mihon;
+StartupWMClass=dev-naved-j2kdesktop-MainKt

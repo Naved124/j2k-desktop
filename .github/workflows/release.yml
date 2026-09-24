@@ -1,0 +1,74 @@
+# Builds J2K Desktop for Linux and Windows and publishes a GitHub Release.
+# Trigger: push a tag like v1.0.0   (git tag v1.0.0 && git push origin v1.0.0)
+# or run it by hand from the Actions tab (it then only uploads the builds as artifacts).
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Version
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then v="${GITHUB_REF#refs/tags/v}"; else v="1.0.0"; fi
+          echo "VERSION=$v" >> "$GITHUB_ENV"
+
+      - name: Build (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon :desktopApp:createDistributable :desktopApp:packageDeb -PappVersion="$VERSION"
+          mkdir -p dist
+          tar -C desktopApp/build/compose/binaries/main/app -czf "dist/j2k-desktop-$VERSION-linux-x64.tar.gz" j2k-desktop
+          cp desktopApp/build/compose/binaries/main/deb/*.deb dist/
+
+      - name: Build (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          ./gradlew --no-daemon :desktopApp:createDistributable :desktopApp:packageMsi :desktopApp:packageExe -PappVersion="$VERSION"
+          mkdir -p dist
+          cp desktopApp/build/compose/binaries/main/msi/*.msi dist/
+          cp desktopApp/build/compose/binaries/main/exe/*.exe dist/
+          (cd desktopApp/build/compose/binaries/main/app && 7z a -tzip "$GITHUB_WORKSPACE/dist/j2k-desktop-$VERSION-windows-x64-portable.zip" j2k-desktop)
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: j2k-desktop-${{ runner.os }}
+          path: dist/*
+
+  release:
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
+          generate_release_notes: true

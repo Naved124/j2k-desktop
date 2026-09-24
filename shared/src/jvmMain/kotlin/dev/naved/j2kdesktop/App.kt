@@ -11,7 +11,6 @@ import dev.naved.j2kdesktop.ui.BrowseTab
 import dev.naved.j2kdesktop.ui.LibraryTab
 import dev.naved.j2kdesktop.ui.MoreTab
 import dev.naved.j2kdesktop.ui.RecentsTab
-import dev.naved.j2kdesktop.ui.AppSettings
 import dev.naved.j2kdesktop.library.LibraryUpdater
 import kotlinx.coroutines.flow.first
 import dev.naved.j2kdesktop.ui.buildImageLoader
@@ -45,7 +44,16 @@ fun App() {
         }
     }
 
-    MaterialTheme(colorScheme = darkColorScheme()) {
+    val colors = when (AppSettings.theme) {
+        AppTheme.Dark -> darkColorScheme()
+        AppTheme.Black -> darkColorScheme(
+            background = androidx.compose.ui.graphics.Color.Black,
+            surface = androidx.compose.ui.graphics.Color.Black,
+            surfaceContainer = androidx.compose.ui.graphics.Color(0xFF0E0E0E),
+        )
+        AppTheme.Light -> lightColorScheme()
+    }
+    MaterialTheme(colorScheme = colors) {
         var current by remember { mutableStateOf(Tab.Library) }
 
         Surface(Modifier.fillMaxSize()) {

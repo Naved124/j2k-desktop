@@ -80,6 +80,20 @@ object Library {
         save()
     }
 
+    /** Backup import: add the manga, or add the backup's categories to the one already there. */
+    fun importEntry(entry: LibraryEntry): Boolean {
+        val index = entries.indexOfFirst { it.sourceId == entry.sourceId && it.url == entry.url }
+        if (index >= 0) {
+            val old = entries[index]
+            entries[index] = old.copy(categories = (old.categories + entry.categories).distinct())
+            save()
+            return false
+        }
+        entries += entry
+        save()
+        return true
+    }
+
     internal fun removeCategoryEverywhere(id: Long) {
         entries.indices.forEach { i ->
             val e = entries[i]
@@ -119,6 +133,13 @@ object Categories {
         if (clean.isEmpty() || list.any { it.name.equals(clean, ignoreCase = true) }) return
         list += Category((list.maxOfOrNull { it.id } ?: 0) + 1, clean)
         save()
+    }
+
+    /** The id of the category with this name, creating it if needed (backup import). */
+    fun ensure(name: String): Long {
+        list.firstOrNull { it.name.equals(name.trim(), ignoreCase = true) }?.let { return it.id }
+        add(name)
+        return list.first { it.name.equals(name.trim(), ignoreCase = true) }.id
     }
 
     fun rename(id: Long, name: String) {

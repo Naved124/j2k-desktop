@@ -70,6 +70,9 @@ object ReadProgress {
             inHistory = true,
         )
         save()
+        if (read && oldChapter?.read != true) {
+            dev.naved.j2kdesktop.tracking.Tracking.onChapterRead(sourceId, manga.url, chapter.chapter_number)
+        }
     }
 
     fun setRead(sourceId: Long, manga: SManga, chapters: List<SChapter>, read: Boolean) {
@@ -83,7 +86,49 @@ object ReadProgress {
         }
         map[key] = old.copy(chapters = updated)
         save()
+        if (read) {
+            chapters.maxOfOrNull { it.chapter_number }?.let {
+                dev.naved.j2kdesktop.tracking.Tracking.onChapterRead(sourceId, manga.url, it)
+            }
+        }
     }
+
+    /** Backup import: merge (read wins, furthest page wins, newest read time wins). */
+    fun importManga(incoming: MangaProgress) {
+        val key = mangaKey(incoming.sourceId, incoming.url)
+        val old = map[key]
+        if (old == null) {
+            map[key] = incoming
+        } else {
+            val merged = old.chapters.toMutableMap()
+            incoming.chapters.forEach { (url, new) ->
+                val prev = merged[url]
+                merged[url] = if (prev == null) {
+                    new
+                } else {
+                    ChapterProgress(
+                        lastPage = maxOf(prev.lastPage, new.lastPage),
+                        pageCount = maxOf(prev.pageCount, new.pageCount),
+                        read = prev.read || new.read,
+                        lastReadAt = maxOf(prev.lastReadAt, new.lastReadAt),
+                    )
+                }
+            }
+            val newer = incoming.lastReadAt > old.lastReadAt
+            map[key] = old.copy(
+                chapters = merged,
+                lastChapterUrl = if (newer) incoming.lastChapterUrl else old.lastChapterUrl,
+                lastChapterName = if (newer) incoming.lastChapterName else old.lastChapterName,
+                lastReadAt = maxOf(old.lastReadAt, incoming.lastReadAt),
+                inHistory = old.inHistory || incoming.inHistory,
+                thumbnailUrl = old.thumbnailUrl ?: incoming.thumbnailUrl,
+            )
+        }
+        save()
+    }
+
+    /** Everything (backup export). */
+    fun all(): List<MangaProgress> = map.values.toList()
 
     /** History: the last chapter read of each manga, newest first. */
     fun history(): List<MangaProgress> = map.values.filter { it.inHistory && it.lastReadAt > 0 }.sortedByDescending { it.lastReadAt }
@@ -156,6 +201,14 @@ object ChapterCache {
         if (old == null) return emptyList()
         val known = old.mapTo(HashSet()) { it.url }
         return cached.filter { it.url !in known }
+    }
+
+    /** Backup import: only fills in manga we don't have a list for yet. */
+    fun importIfMissing(sourceId: Long, url: String, chapters: List<CachedChapter>) {
+        val key = mangaKey(sourceId, url)
+        if (map[key] != null || chapters.isEmpty()) return
+        map[key] = chapters
+        store.save(map.toMap())
     }
 
     /** Unread chapters of a library manga, respecting its hidden scanlator groups. */

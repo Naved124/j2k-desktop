@@ -41,10 +41,6 @@ class NetworkHelper(cacheDir: File) {
         /** One shared instance for the whole app. Cache lives in ~/.cache/j2k-desktop */
         val default: NetworkHelper by lazy { NetworkHelper(appCacheDir()) }
 
-        private fun appCacheDir(): File {
-            val base = System.getenv("XDG_CACHE_HOME")?.let(::File)
-                ?: File(System.getProperty("user.home"), ".cache")
-            return File(base, "j2k-desktop").apply { mkdirs() }
-        }
+        private fun appCacheDir(): File = dev.naved.j2kdesktop.compat.AppDirs.cache
     }
 }

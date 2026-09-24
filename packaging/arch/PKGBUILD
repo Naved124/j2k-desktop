@@ -1,0 +1,45 @@
+# Builds J2K Desktop from this checkout and installs it system-wide:
+#   cd packaging/arch && makepkg -si
+# Result: /opt/j2k-desktop (app + bundled Java runtime), /usr/bin/j2k-desktop, a menu entry,
+# and tachiyomi:// / mihon:// repo links opening the app.
+pkgname=j2k-desktop
+pkgver=1.0.0
+pkgrel=1
+pkgdesc="TachiyomiJ2K-style manga reader for desktop"
+arch=('x86_64')
+url="https://github.com/Naved124/j2k-desktop"
+license=('unknown')
+depends=('libx11' 'libxext' 'libxi' 'libxrender' 'libxtst' 'freetype2' 'fontconfig' 'hicolor-icon-theme')
+makedepends=('jdk21-openjdk')
+optdepends=(
+  'chromium: Cloudflare-protected and WebView sources (any Chromium-based browser works)'
+  'xdg-utils: "Open folder" buttons and repo links'
+)
+# The bundled Java runtime must not be stripped
+options=('!strip' '!debug')
+install=j2k-desktop.install
+
+_root="$(realpath "$startdir/../..")"
+
+pkgver() {
+  # Version from the latest git tag (v1.2.0 -> 1.2.0), else the default above
+  cd "$_root"
+  local tag
+  if tag=$(git describe --tags --abbrev=0 2>/dev/null); then echo "${tag#v}"; else echo "1.0.0"; fi
+}
+
+build() {
+  cd "$_root"
+  export JAVA_HOME=/usr/lib/jvm/java-21-openjdk
+  ./gradlew --no-daemon :desktopApp:createDistributable -PappVersion="$pkgver"
+}
+
+package() {
+  local app="$_root/desktopApp/build/compose/binaries/main/app/j2k-desktop"
+  install -d "$pkgdir/opt"
+  cp -a "$app" "$pkgdir/opt/j2k-desktop"
+  install -d "$pkgdir/usr/bin"
+  ln -s /opt/j2k-desktop/bin/j2k-desktop "$pkgdir/usr/bin/j2k-desktop"
+  install -Dm644 "$_root/packaging/linux/j2k-desktop.desktop" "$pkgdir/usr/share/applications/j2k-desktop.desktop"
+  install -Dm644 "$_root/desktopApp/icons/icon.png" "$pkgdir/usr/share/icons/hicolor/512x512/apps/j2k-desktop.png"
+}
