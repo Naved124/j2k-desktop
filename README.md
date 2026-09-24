@@ -58,3 +58,29 @@ The builds bundle their own Java runtime, so nothing else needs installing (exce
 - `shared`: the app: UI, reader, library, downloads, backups, tracking, extension loading.
 - `source-api`: the Tachiyomi extension API (`eu.kanade.tachiyomi.*`), the network layer, the browser bridge (`dev.naved.j2kdesktop.browser`) and `android.webkit`.
 - `android-compat`: desktop stand-ins for the Android classes extensions use (Context, SharedPreferences, graphics, preferences, …).
+
+## Adding an extension repo
+
+The app has no built-in repos, so you add the ones you want. For example, the Keiyoushi repo:
+
+```
+https://raw.githubusercontent.com/keiyoushi/extensions/repo/index.min.json
+```
+
+**In the app**
+
+1. Open **Browse**, then the **Extensions** chip at the top.
+2. Paste the URL into the "Repo URL (…/index.min.json) or a tachiyomi:// link" field and press **Add**.
+3. After a few seconds the extension list appears. Install what you want; its sources then show under **Sources**.
+
+**From a terminal** (works with the app open or closed; an open app picks it up within 2 seconds):
+
+```
+echo "https://raw.githubusercontent.com/keiyoushi/extensions/repo/index.min.json" >> ~/.local/share/j2k-desktop/pending-repos.txt
+```
+
+On Windows the file is `%APPDATA%\j2k-desktop\pending-repos.txt`.
+
+**From a website:** with the app installed (Arch package or `install-local.sh`), "Add repo" buttons that open `tachiyomi://` or `mihon://` links send the repo to J2K Desktop.
+
+**From a backup:** importing a Tachiyomi/Mihon backup (More → Backup) re-adds the repos it contains.
