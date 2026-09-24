@@ -8,7 +8,7 @@ pkgrel=1
 pkgdesc="TachiyomiJ2K-style manga reader for desktop"
 arch=('x86_64')
 url="https://github.com/Naved124/j2k-desktop"
-license=('unknown')
+license=('LicenseRef-J2K-Desktop')
 depends=('libx11' 'libxext' 'libxi' 'libxrender' 'libxtst' 'freetype2' 'fontconfig' 'hicolor-icon-theme')
 makedepends=('jdk21-openjdk')
 optdepends=(
@@ -41,5 +41,8 @@ package() {
   install -d "$pkgdir/usr/bin"
   ln -s /opt/j2k-desktop/bin/j2k-desktop "$pkgdir/usr/bin/j2k-desktop"
   install -Dm644 "$_root/packaging/linux/j2k-desktop.desktop" "$pkgdir/usr/share/applications/j2k-desktop.desktop"
+  install -Dm644 "$_root/LICENSE" "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+  install -Dm644 "$_root/NOTICE" "$pkgdir/usr/share/licenses/$pkgname/NOTICE"
+  install -Dm644 "$_root/licenses/Apache-2.0.txt" "$pkgdir/usr/share/licenses/$pkgname/Apache-2.0.txt"
   install -Dm644 "$_root/desktopApp/icons/icon.png" "$pkgdir/usr/share/icons/hicolor/512x512/apps/j2k-desktop.png"
 }

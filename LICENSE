@@ -1,0 +1,82 @@
+J2K Desktop License
+
+Copyright (c) 2026 MD Naved Raja Khan. All rights reserved.
+
+This license covers J2K Desktop (the "Software"): the source code, build
+scripts, packaging, icons and other files in this repository, and the
+builds published on its Releases page. Files that come from other projects
+keep their own licenses; they are listed in the NOTICE file (see section 5).
+
+1. What you may do
+
+   You may, free of charge:
+   a. download the official releases of the Software, or build it yourself
+      from this repository;
+   b. install and run it on devices you own or control, for your own
+      personal, non-commercial use;
+   c. read the source code to understand how the Software works;
+   d. make changes only as far as needed to build or run the Software on
+      your own devices, as long as you keep those changes to yourself.
+
+2. What you may not do
+
+   Unless the copyright holder gives you written permission, you may not:
+   a. redistribute, republish, re-upload, mirror or share copies of the
+      Software, changed or unchanged, in source or binary form (including
+      on other websites, app stores, package repositories or file-sharing
+      services);
+   b. fork, modify, rebrand or build upon the Software in order to publish,
+      release or share your own version of it, or any app or product based
+      on it;
+   c. sell, rent, lease, license or sublicense the Software, charge for
+      access to it, bundle it with anything you charge for, or otherwise
+      make money from it or from any version of it (including through ads,
+      donations, paid downloads or paid support);
+   d. remove or change this license, the copyright notice or the NOTICE
+      file.
+
+   Linking to this repository or its Releases page is always allowed.
+
+3. GitHub
+
+   If this repository is public, GitHub's Terms of Service let GitHub users
+   view it and fork it on GitHub. A fork created that way gives no rights
+   beyond this license: section 2 still applies to it.
+
+4. Content and extensions
+
+   The Software is a reader. It contains no manga, comics or other content,
+   and it has no built-in extension repositories. You are responsible for
+   the extensions and sources you choose to add, and for following the
+   laws and terms that apply to the content you access with them.
+
+5. Third-party components
+
+   Some files in this repository are based on, or taken from, other
+   projects and are licensed under their own terms (for example the
+   Apache License 2.0). They are listed in the NOTICE file. Nothing in this
+   license limits the rights their own licenses give you for those files.
+   The libraries the Software uses, and the Java runtime bundled with the
+   release builds, are covered by their own licenses.
+
+6. Ending this license
+
+   If you break any term of this license, your permission to use the
+   Software ends automatically, and you must stop using it and delete your
+   copies.
+
+7. No warranty
+
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+   OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+   MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+   IN NO EVENT SHALL THE COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM, DAMAGES
+   OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+   ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+   OTHER DEALINGS IN THE SOFTWARE.
+
+8. Permission
+
+   To ask for permission to do something this license doesn't allow, open
+   an issue on the GitHub repository or contact the copyright holder
+   through GitHub (github.com/Naved124).

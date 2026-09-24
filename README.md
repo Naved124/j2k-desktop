@@ -85,3 +85,12 @@ On Windows the file is `%APPDATA%\j2k-desktop\pending-repos.txt`.
 **From a website:** with the app installed (Arch package or `install-local.sh`), "Add repo" buttons that open `tachiyomi://` or `mihon://` links send the repo to J2K Desktop.
 
 **From a backup:** importing a Tachiyomi/Mihon backup (More → Backup) re-adds the repos it contains.
+
+## License
+
+J2K Desktop is free to download and use for your own personal, non-commercial use.
+You may not redistribute or republish it, fork it to release your own version, or make money from it, unless you have written permission.
+See [LICENSE](LICENSE) for the full terms.
+
+Some files come from other projects and keep their own licenses (Apache 2.0); see [NOTICE](NOTICE).
+

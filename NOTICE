@@ -1,0 +1,34 @@
+J2K Desktop
+Copyright (c) 2026 MD Naved Raja Khan. Licensed under the J2K Desktop
+License (see LICENSE), except for the files listed below.
+
+-------------------------------------------------------------------------------
+Files under the Apache License, Version 2.0 (see licenses/Apache-2.0.txt)
+-------------------------------------------------------------------------------
+
+source-api/src/main/kotlin/eu/kanade/tachiyomi/**
+  The extension API (Source, HttpSource, SManga, SChapter, Filter, network
+  helpers and interceptors), re-implemented for desktop so that
+  Tachiyomi/Mihon extensions can run. Its API and parts of its code and
+  documentation are based on Tachiyomi (https://github.com/tachiyomiorg)
+  and TachiyomiJ2K (https://github.com/Jays2Kings/tachiyomiJ2K).
+  Copyright The Tachiyomi Open Source Project and contributors.
+  Changed for J2K Desktop.
+
+shared/src/jvmMain/kotlin/dev/naved/j2kdesktop/reader/ReaderIcons.kt
+  Contains path data from Google's Material Design icons.
+  Copyright Google LLC.
+
+-------------------------------------------------------------------------------
+Libraries and runtime
+-------------------------------------------------------------------------------
+
+J2K Desktop uses Kotlin, Compose Multiplatform, kotlinx.coroutines,
+kotlinx.serialization, OkHttp, Okio, Jsoup, Coil, RxJava, Injekt,
+apk-parser and dex2jar, each under its own license (mostly Apache 2.0).
+The release builds bundle a Java runtime (OpenJDK, GPLv2 with the Classpath
+Exception); its license files are included with it under lib/runtime/legal.
+
+The name "Tachiyomi" and related names belong to their owners. J2K Desktop
+is an independent project and is not affiliated with Tachiyomi, Mihon or
+TachiyomiJ2K.
