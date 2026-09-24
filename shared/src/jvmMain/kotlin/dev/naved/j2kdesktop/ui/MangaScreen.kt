@@ -32,6 +32,8 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
+import dev.naved.j2kdesktop.reader.ReaderLauncher
+import dev.naved.j2kdesktop.reader.ReaderRequest
 import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
@@ -52,16 +54,43 @@ fun MangaScreen(source: Source, manga: SManga, onBack: () -> Unit) {
     var error by remember(manga.url) { mutableStateOf<String?>(null) }
 
     LaunchedEffect(manga.url) {
+        // Extensions often return details without url (or even title) set, so merge into our copy
+        fun merge(fetched: SManga) = manga.copy().apply {
+            copyFrom(fetched)
+            runCatching { fetched.title }.getOrNull()?.takeIf { it.isNotBlank() }?.let { title = it }
+        }
         try {
-            coroutineScope {
-                launch { details = withContext(Dispatchers.IO) { source.getMangaDetails(manga) } }
-                launch { chapters = withContext(Dispatchers.IO) { source.getChapterList(manga) } }
+            // Newer extensions (Keiyoushi's KeiSource) only implement getMangaUpdate: details + chapters in one call.
+            // Older ones get the default, which calls getMangaDetails and getChapterList.
+            val update = withContext(Dispatchers.IO) {
+                source.getMangaUpdate(manga, emptyList(), fetchDetails = true, fetchChapters = true)
             }
+            details = merge(update.manga)
+            chapters = update.chapters
         } catch (e: CancellationException) {
             throw e
         } catch (e: Throwable) {
             e.printStackTrace() // shows up in the terminal
-            error = e.message ?: e.toString()
+            // Try the parts separately, so a details error doesn't hide the chapters (or the other way round)
+            try {
+                coroutineScope {
+                    launch {
+                        runCatching {
+                            withContext(Dispatchers.IO) { source.getMangaUpdate(manga, emptyList(), true, false) }
+                        }.getOrNull()?.let { details = merge(it.manga) }
+                    }
+                    launch {
+                        chapters = withContext(Dispatchers.IO) {
+                            source.getMangaUpdate(manga, emptyList(), false, true).chapters
+                        }
+                    }
+                }
+            } catch (e2: CancellationException) {
+                throw e2
+            } catch (e2: Throwable) {
+                e2.printStackTrace()
+                error = e2.message ?: e2.toString()
+            }
         }
     }
 
@@ -136,6 +165,11 @@ fun MangaScreen(source: Source, manga: SManga, onBack: () -> Unit) {
 
         items(chapters.orEmpty(), key = { it.url }) { chapter ->
             ListItem(
+                modifier = Modifier.clickable {
+                    // Sources list newest first; the reader wants reading order (oldest first)
+                    val ordered = chapters.orEmpty().reversed()
+                    ReaderLauncher.open(ReaderRequest(source, details, ordered, ordered.indexOf(chapter)))
+                },
                 headlineContent = { Text(chapter.name) },
                 supportingContent = {
                     Text(listOfNotNull(chapter.date_upload.toDateString(), chapter.scanlator).joinToString(" • "))

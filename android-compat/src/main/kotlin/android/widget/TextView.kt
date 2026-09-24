@@ -21,6 +21,9 @@ open class TextView(context: Context?) : View(context) {
     fun setSingleLine() {}
     fun setSingleLine(singleLine: Boolean) {}
     fun setMaxLines(maxLines: Int) {}
+    fun setHorizontallyScrolling(whether: Boolean) {}
+    fun setMovementMethod(movement: android.text.method.MovementMethod?) {}
+    fun setTextIsSelectable(selectable: Boolean) {}
 
     fun addTextChangedListener(watcher: TextWatcher) {
         watchers += watcher

@@ -21,4 +21,11 @@ object AndroidCompat {
     /** Extensions call Toast.makeText(...).show(); the UI replaces this to show a snackbar. */
     @Volatile
     var toastHandler: (String) -> Unit = { println("[toast] $it") }
+
+    /**
+     * Image decoder for android.graphics.BitmapFactory. The app plugs in Skia here (JPEG, PNG, WebP, GIF);
+     * without it ImageIO is used, which can't read WebP.
+     */
+    @Volatile
+    var imageDecoder: ((ByteArray) -> java.awt.image.BufferedImage?)? = null
 }

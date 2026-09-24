@@ -12,6 +12,9 @@ abstract class Context {
     open fun getCacheDir(): File = AppDirs.cache
     open fun getFilesDir(): File = AppDirs.data
     open fun getDataDir(): File = AppDirs.data
+    open fun getExternalCacheDir(): File? = AppDirs.cache
+    open fun getResources(): android.content.res.Resources = android.content.res.Resources.getSystem()
+    open fun getSystemService(name: String): Any? = null
 
     companion object {
         const val MODE_PRIVATE = 0

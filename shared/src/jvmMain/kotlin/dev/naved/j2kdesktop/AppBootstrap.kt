@@ -33,6 +33,8 @@ object AppBootstrap {
         Injekt.addSingleton<NetworkHelper>(NetworkHelper.default)
         Injekt.addSingleton<Json>(json)
         Injekt.addSingleton<ProtoBuf>(ProtoBuf)
+        // BitmapFactory (used by extensions that unscramble images) decodes with Skia: WebP works
+        AndroidCompat.imageDecoder = SkiaImageDecoder::decode
         done = true
     }
 }

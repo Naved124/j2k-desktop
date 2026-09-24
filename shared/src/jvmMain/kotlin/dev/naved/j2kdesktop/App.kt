@@ -11,6 +11,8 @@ import dev.naved.j2kdesktop.ui.BrowseTab
 import dev.naved.j2kdesktop.ui.buildImageLoader
 import dev.naved.j2kdesktop.compat.AndroidCompat
 import dev.naved.j2kdesktop.extension.ExtensionManager
+import dev.naved.j2kdesktop.reader.ReaderLauncher
+import dev.naved.j2kdesktop.reader.ReaderScreen
 import kotlinx.coroutines.launch
 
 enum class Tab(val label: String, val glyph: String) {
@@ -58,6 +60,10 @@ fun App() {
                         Tab.More    -> PlaceholderScreen("More", "Settings, backups, about.")
                     }
                 }
+            }
+            // The reader draws over everything; Browse stays underneath so it keeps its place
+            ReaderLauncher.request?.let { request ->
+                ReaderScreen(request, onClose = { ReaderLauncher.close() })
             }
             SnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter))
           }
