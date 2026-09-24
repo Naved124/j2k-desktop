@@ -26,11 +26,14 @@ object PageLoader {
 
     /** Downloads (or reads) and decodes one page. Runs on Dispatchers.IO. */
     suspend fun load(source: Source, page: Page): DecodedPage = withContext(Dispatchers.IO) {
-        val bytes = fetchBytes(source, page)
+        val bytes = fetchBytesInner(source, page)
         decode(bytes)
     }
 
-    private suspend fun fetchBytes(source: Source, page: Page): ByteArray {
+    /** The page image bytes (network, or the file for local/downloaded pages). Also used by downloads. */
+    suspend fun fetchBytes(source: Source, page: Page): ByteArray = withContext(Dispatchers.IO) { fetchBytesInner(source, page) }
+
+    private suspend fun fetchBytesInner(source: Source, page: Page): ByteArray {
         if (page.imageUrl.isNullOrBlank() && source is HttpSource) {
             page.imageUrl = source.getImageUrl(page)
         }

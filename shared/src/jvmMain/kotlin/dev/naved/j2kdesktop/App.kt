@@ -8,6 +8,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import coil3.compose.setSingletonImageLoaderFactory
 import dev.naved.j2kdesktop.ui.BrowseTab
+import dev.naved.j2kdesktop.ui.LibraryTab
+import dev.naved.j2kdesktop.ui.MoreTab
+import dev.naved.j2kdesktop.ui.RecentsTab
+import dev.naved.j2kdesktop.ui.AppSettings
+import dev.naved.j2kdesktop.library.LibraryUpdater
+import kotlinx.coroutines.flow.first
 import dev.naved.j2kdesktop.ui.buildImageLoader
 import dev.naved.j2kdesktop.compat.AndroidCompat
 import dev.naved.j2kdesktop.extension.ExtensionManager
@@ -32,6 +38,11 @@ fun App() {
         val scope = this
         AndroidCompat.toastHandler = { msg -> scope.launch { snackbar.showSnackbar(msg) } }
         ExtensionManager.start(scope)
+        // Once installed extensions are loaded, check the library for new chapters
+        if (AppSettings.updateOnStart) {
+            snapshotFlow { ExtensionManager.installedLoaded }.first { it }
+            LibraryUpdater.start()
+        }
     }
 
     MaterialTheme(colorScheme = darkColorScheme()) {
@@ -54,10 +65,10 @@ fun App() {
 
                 Box(Modifier.weight(1f).fillMaxHeight().padding(24.dp)) {
                     when (current) {
-                        Tab.Library -> PlaceholderScreen("Library", "Your manga will show up here.")
-                        Tab.Recents -> PlaceholderScreen("Recents", "Recently read and new chapters.")
+                        Tab.Library -> LibraryTab()
+                        Tab.Recents -> RecentsTab()
                         Tab.Browse  -> BrowseTab()
-                        Tab.More    -> PlaceholderScreen("More", "Settings, backups, about.")
+                        Tab.More    -> MoreTab()
                     }
                 }
             }

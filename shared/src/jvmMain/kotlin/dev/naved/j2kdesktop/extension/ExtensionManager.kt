@@ -37,6 +37,10 @@ object ExtensionManager {
         private set
     var message by mutableStateOf<String?>(null)
 
+    /** True once installed extensions are loaded (library update waits for this). */
+    var installedLoaded by mutableStateOf(false)
+        private set
+
     /** pkg -> what's happening right now ("Installing…" etc.) */
     val busy = mutableStateMapOf<String, String>()
 
@@ -55,6 +59,7 @@ object ExtensionManager {
 
         scope.launch {
             loadInstalled()
+            installedLoaded = true
             importPendingRepos()
             refresh()
             // The tachiyomi:// link handler (scripts/install-link-handler.sh) drops URLs in this file

@@ -1,5 +1,7 @@
 package eu.kanade.tachiyomi.network
 
+import dev.naved.j2kdesktop.browser.Browser
+import dev.naved.j2kdesktop.browser.PersistentCookieJar
 import eu.kanade.tachiyomi.network.interceptor.CloudflareInterceptor
 import eu.kanade.tachiyomi.network.interceptor.UncaughtExceptionInterceptor
 import eu.kanade.tachiyomi.network.interceptor.UserAgentInterceptor
@@ -9,7 +11,8 @@ import java.io.File
 import java.util.concurrent.TimeUnit
 
 class NetworkHelper(cacheDir: File) {
-    val cookieJar = MemoryCookieJar()
+    /** Saved to disk and shared with the browser (and android.webkit.CookieManager). */
+    val cookieJar = PersistentCookieJar()
 
     val client: OkHttpClient = OkHttpClient.Builder()
         .cookieJar(cookieJar)
@@ -27,8 +30,9 @@ class NetworkHelper(cacheDir: File) {
     val cloudflareClient: OkHttpClient
         get() = client
 
+    /** Same User-Agent as the installed browser, so a Cloudflare pass from the browser also works here. */
     val defaultUserAgent: String
-        get() = DEFAULT_USER_AGENT
+        get() = Browser.userAgent
 
     companion object {
         const val DEFAULT_USER_AGENT =

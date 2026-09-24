@@ -108,6 +108,11 @@ fun ReaderScreen(request: ReaderRequest, onClose: () -> Unit) {
     val scope = rememberCoroutineScope()
     val model = remember(request) { ReaderModel(request, scope) }
     LaunchedEffect(model) { model.start() }
+    // Remember the page (and mark chapters read) as you go
+    LaunchedEffect(model) {
+        snapshotFlow { Triple(model.currentChapterIndex, model.currentPageIndex, model.loaded.size) }
+            .collect { (_, _, loadedCount) -> if (loadedCount > 0) model.saveProgress() }
+    }
 
     val focus = remember { FocusRequester() }
     LaunchedEffect(Unit) { focus.requestFocus() }

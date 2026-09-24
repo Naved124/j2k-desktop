@@ -132,14 +132,49 @@ class PersistentCookieJar : CookieJar {
     override fun loadForRequest(url: HttpUrl): List<Cookie> = CookieStore.get(url)
 }
 
-/** Copies cookies between [CookieStore] and a browser tab. */
+/** Copies cookies between [CookieStore] and the browser. */
 object CookieBridge {
     /** Store -> browser, before a tab loads [url]. */
     suspend fun toBrowser(session: CdpSession, url: String) {
-        val parsed = url.toHttpUrlOrNull() ?: return
+        val params = cookieParams(url) ?: return
+        runCatching { session.send("Network.setCookies", params) }.onFailure { it.printStackTrace() }
+    }
+
+    /** Store -> browser without touching any tab (browser-wide Storage domain). */
+    suspend fun toBrowser(connection: CdpConnection, url: String) {
+        val params = cookieParams(url) ?: return
+        runCatching { connection.send("Storage.setCookies", params) }.onFailure { it.printStackTrace() }
+    }
+
+    /** Browser -> store, for the cookies the browser would send to [url]. */
+    suspend fun fromBrowser(session: CdpSession, url: String?) {
+        val parsed = url?.toHttpUrlOrNull() ?: return
+        val result = runCatching {
+            session.send("Network.getCookies", buildJsonObject { putJsonArray("urls") { add(parsed.toString()) } })
+        }.getOrNull() ?: return
+        CookieStore.add(parse(result["cookies"] as? JsonArray))
+    }
+
+    /** Browser -> store, every cookie for [url]'s site, without touching any tab. */
+    suspend fun fromBrowser(connection: CdpConnection, url: String?) {
+        val parsed = url?.toHttpUrlOrNull() ?: return
+        CookieStore.add(browserCookies(connection).filter { domainMatches(parsed.host, it.domain) })
+    }
+
+    /** All cookies the browser has (browser-wide). */
+    suspend fun browserCookies(connection: CdpConnection): List<Cookie> {
+        val result = runCatching { connection.send("Storage.getCookies") }.getOrNull() ?: return emptyList()
+        return parse(result["cookies"] as? JsonArray)
+    }
+
+    fun domainMatches(host: String, domain: String): Boolean =
+        host == domain || host.endsWith(".$domain") || domain.endsWith(".$host")
+
+    private fun cookieParams(url: String): JsonObject? {
+        val parsed = url.toHttpUrlOrNull() ?: return null
         val list = CookieStore.get(parsed)
-        if (list.isEmpty()) return
-        val params = buildJsonObject {
+        if (list.isEmpty()) return null
+        return buildJsonObject {
             putJsonArray("cookies") {
                 list.forEach { c ->
                     addJsonObject {
@@ -158,32 +193,23 @@ object CookieBridge {
                 }
             }
         }
-        runCatching { session.send("Network.setCookies", params) }.onFailure { it.printStackTrace() }
     }
 
-    /** Browser -> store, for the cookies the browser would send to [url]. */
-    suspend fun fromBrowser(session: CdpSession, url: String?) {
-        val parsed = url?.toHttpUrlOrNull() ?: return
-        val result = runCatching {
-            session.send("Network.getCookies", buildJsonObject { putJsonArray("urls") { add(parsed.toString()) } })
-        }.getOrNull() ?: return
-        val list = (result["cookies"] as? JsonArray).orEmpty().mapNotNull { el ->
-            val o = el as? JsonObject ?: return@mapNotNull null
-            runCatching {
-                val domain = o.string("domain")!!
-                val b = Cookie.Builder()
-                    .name(o.string("name")!!)
-                    .value(o.string("value")!!)
-                    .path(o.string("path") ?: "/")
-                if (domain.startsWith(".")) b.domain(domain.removePrefix(".")) else b.hostOnlyDomain(domain)
-                val expires = o["expires"]?.jsonPrimitive?.doubleOrNull ?: -1.0
-                val session = o["session"]?.jsonPrimitive?.booleanOrNull ?: (expires <= 0)
-                if (!session && expires > 0) b.expiresAt((expires * 1000).toLong())
-                if (o["secure"]?.jsonPrimitive?.booleanOrNull == true) b.secure()
-                if (o["httpOnly"]?.jsonPrimitive?.booleanOrNull == true) b.httpOnly()
-                b.build()
-            }.getOrNull()
-        }
-        CookieStore.add(list)
+    private fun parse(array: JsonArray?): List<Cookie> = array.orEmpty().mapNotNull { el ->
+        val o = el as? JsonObject ?: return@mapNotNull null
+        runCatching {
+            val domain = o.string("domain")!!
+            val b = Cookie.Builder()
+                .name(o.string("name")!!)
+                .value(o.string("value")!!)
+                .path(o.string("path") ?: "/")
+            if (domain.startsWith(".")) b.domain(domain.removePrefix(".")) else b.hostOnlyDomain(domain)
+            val expires = o["expires"]?.jsonPrimitive?.doubleOrNull ?: -1.0
+            val isSession = o["session"]?.jsonPrimitive?.booleanOrNull ?: (expires <= 0)
+            if (!isSession && expires > 0) b.expiresAt((expires * 1000).toLong())
+            if (o["secure"]?.jsonPrimitive?.booleanOrNull == true) b.secure()
+            if (o["httpOnly"]?.jsonPrimitive?.booleanOrNull == true) b.httpOnly()
+            b.build()
+        }.getOrNull()
     }
 }

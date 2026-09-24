@@ -77,29 +77,57 @@ object Browser {
     private val openTabs = AtomicInteger()
     private var idleJob: Job? = null
 
-    private val prefsFile get() = File(AppDirs.data, "browser.txt")
+    private val uaFile get() = File(AppDirs.data, "browser-ua.txt")
 
     val isAvailable: Boolean get() = BrowserLocator.executable != null
 
-    /** The browser's Chrome major version, remembered from the last launch (so the UA is right before launch). */
+    /** The installed browser's real User-Agent (as a normal window sends it), remembered across runs. */
     @Volatile
-    var chromeMajor: Int? = runCatching { prefsFile.readText().trim().toInt() }.getOrNull()
-        private set
+    private var savedUserAgent: String? = runCatching { uaFile.readText().trim() }.getOrNull()?.takeIf { it.startsWith("Mozilla/") }
 
-    /** What a normal (not headless) copy of this browser sends as its User-Agent on this OS. */
+    /** Used by OkHttp too, so the cookies a check earns in the browser also work for the app. */
     val userAgent: String
-        get() = UserAgents.forChrome(chromeMajor ?: UserAgents.FALLBACK_MAJOR)
+        get() = savedUserAgent ?: UserAgents.forChrome(UserAgents.FALLBACK_MAJOR)
+
+    /** Brand for client hints ("Microsoft Edge", "Google Chrome", "Brave", "Chromium"). */
+    val brand: String
+        get() {
+            val exe = BrowserLocator.executable.orEmpty().lowercase()
+            return when {
+                "Edg/" in userAgent || "edge" in exe -> "Microsoft Edge"
+                "brave" in exe -> "Brave"
+                "google" in exe || "chrome.exe" in exe || exe.endsWith("/google chrome") -> "Google Chrome"
+                "vivaldi" in exe -> "Vivaldi"
+                else -> "Chromium"
+            }
+        }
+
+    /** A visible window told us the real UA (e.g. after a browser update): use it from now on. */
+    fun rememberUserAgent(ua: String?) {
+        val clean = ua?.replace("HeadlessChrome", "Chrome")?.takeIf { it.startsWith("Mozilla/") } ?: return
+        if (clean != savedUserAgent) {
+            savedUserAgent = clean
+            runCatching { uaFile.writeText(clean) }
+        }
+    }
 
     init {
         Runtime.getRuntime().addShutdownHook(Thread { process?.destroy() })
     }
 
-    suspend fun newTab(): CdpSession {
-        val conn = mutex.withLock { connection?.takeIf { it.isOpen } ?: launch() }
+    /** The hidden browser's connection (starting it if needed). */
+    suspend fun connection(): CdpConnection = mutex.withLock { connection?.takeIf { it.isOpen } ?: launchBrowser() }
+
+    /**
+     * A tab attached for DevTools. [instrument] = page/runtime/network events (WebView needs them).
+     * Cloudflare's check can notice an instrumented page, so the check-solving code uses false.
+     */
+    suspend fun newTab(instrument: Boolean = true, url: String = "about:blank"): CdpSession {
+        val conn = connection()
         idleJob?.cancel()
         openTabs.incrementAndGet()
         try {
-            val targetId = conn.send("Target.createTarget", buildJsonObject { put("url", "about:blank") })
+            val targetId = conn.send("Target.createTarget", buildJsonObject { put("url", url) })
                 .string("targetId") ?: throw CdpException("The browser didn't open a tab")
             val sessionId = conn.send(
                 "Target.attachToTarget",
@@ -109,10 +137,12 @@ object Browser {
                 },
             ).string("sessionId") ?: throw CdpException("Couldn't attach to the browser tab")
             val session = CdpSession(conn, sessionId, targetId)
-            session.send("Page.enable")
-            session.send("Runtime.enable")
-            session.send("Network.enable")
-            setUserAgent(session, userAgent)
+            if (instrument) {
+                session.send("Page.enable")
+                session.send("Runtime.enable")
+                session.send("Network.enable")
+                setUserAgent(session, userAgent)
+            }
             return session
         } catch (e: Throwable) {
             tabClosed(conn)
@@ -120,9 +150,15 @@ object Browser {
         }
     }
 
-    /** Sets the tab's User-Agent and the matching client hints (a headless browser would say "HeadlessChrome"). */
+    /** Sets the tab's User-Agent and matching client hints. */
     suspend fun setUserAgent(session: CdpSession, ua: String) {
-        session.send("Emulation.setUserAgentOverride", UserAgents.overrideParams(ua))
+        session.send("Emulation.setUserAgentOverride", UserAgents.overrideParams(ua, brand))
+    }
+
+    /** CookieManager.removeAllCookies: also forget what the running browser has. */
+    fun clearCookies() {
+        val conn = connection?.takeIf { it.isOpen } ?: return
+        scope.launch { runCatching { conn.send("Storage.clearCookies") } }
     }
 
     internal fun tabClosed(conn: CdpConnection) {
@@ -147,25 +183,34 @@ object Browser {
         process = null
     }
 
-    private suspend fun launch(): CdpConnection {
+    private val headlessArgs = listOf("--headless=new", "--window-size=1366,900", "--hide-scrollbars", "--mute-audio")
+
+    private suspend fun launchBrowser(): CdpConnection {
         shutdown()
         val exe = BrowserLocator.executable ?: throw IOException(BrowserLocator.NOT_FOUND)
         val profile = File(AppDirs.data, "browser").apply { mkdirs() }
-        val (proc, url) = BrowserProcess.start(
-            exe,
-            profile,
-            listOf("--headless=new", "--window-size=1366,900", "--hide-scrollbars", "--mute-audio"),
-        )
+        if (savedUserAgent == null) {
+            // First run: ask the browser what it is, so the hidden one can present itself as a normal window
+            val (probe, probeUrl) = BrowserProcess.start(exe, profile, headlessArgs)
+            try {
+                val c = CdpConnection.connect(probeUrl)
+                rememberUserAgent(c.send("Browser.getVersion").string("userAgent"))
+                c.close()
+            } finally {
+                probe.destroy()
+                probe.waitFor(5, TimeUnit.SECONDS)
+            }
+        }
+        val (proc, url) = BrowserProcess.start(exe, profile, headlessArgs + "--user-agent=$userAgent")
         process = proc
         val conn = CdpConnection.connect(url)
         connection = conn
-        // Remember the real Chrome version so User-Agents match the browser from now on
+        // Browser updated since we saved its UA? Bump the version numbers in it.
         val product = conn.send("Browser.getVersion").string("product").orEmpty()
-        Regex("""/(\d+)\.""").find(product)?.groupValues?.get(1)?.toIntOrNull()?.let { major ->
-            if (major != chromeMajor) {
-                chromeMajor = major
-                runCatching { prefsFile.writeText(major.toString()) }
-            }
+        val major = Regex("""/(\d+)\.""").find(product)?.groupValues?.get(1)
+        val savedMajor = Regex("""Chrome/(\d+)""").find(userAgent)?.groupValues?.get(1)
+        if (major != null && savedMajor != null && major != savedMajor) {
+            rememberUserAgent(userAgent.replace(Regex("""(Chrome|Edg)/\d+"""), "$1/$major"))
         }
         return conn
     }
@@ -173,7 +218,7 @@ object Browser {
 
 /** Starting a browser process with DevTools enabled. */
 internal object BrowserProcess {
-    fun start(exe: String, profile: File, extraArgs: List<String>): Pair<Process, String> {
+    fun start(exe: String, profile: File, extraArgs: List<String>, startUrl: String = "about:blank"): Pair<Process, String> {
         clearStaleLock(profile, exe)
         val args = listOf(
             exe,
@@ -181,10 +226,9 @@ internal object BrowserProcess {
             "--user-data-dir=${profile.absolutePath}",
             "--no-first-run",
             "--no-default-browser-check",
-            "--disable-blink-features=AutomationControlled",
             "--disable-features=Translate,MediaRouter,OptimizationHints",
             "--password-store=basic",
-        ) + extraArgs + "about:blank"
+        ) + extraArgs + startUrl
         val process = ProcessBuilder(args)
             .redirectOutput(ProcessBuilder.Redirect.DISCARD)
             .start()
@@ -241,7 +285,7 @@ object UserAgents {
     }
 
     /** Emulation.setUserAgentOverride parameters, with client hints derived from the UA string. */
-    fun overrideParams(ua: String): JsonObject {
+    fun overrideParams(ua: String, brand: String): JsonObject {
         val major = Regex("""Chrome/(\d+)""").find(ua)?.groupValues?.get(1)
         val platform = when {
             "Windows" in ua -> "Windows"
@@ -264,9 +308,11 @@ object UserAgents {
                                 put("brand", "Chromium")
                                 put("version", major)
                             }
-                            addJsonObject {
-                                put("brand", "Google Chrome")
-                                put("version", major)
+                            if (brand != "Chromium") {
+                                addJsonObject {
+                                    put("brand", brand)
+                                    put("version", major)
+                                }
                             }
                             addJsonObject {
                                 put("brand", "Not.A/Brand")
@@ -278,9 +324,11 @@ object UserAgents {
                                 put("brand", "Chromium")
                                 put("version", "$major.0.0.0")
                             }
-                            addJsonObject {
-                                put("brand", "Google Chrome")
-                                put("version", "$major.0.0.0")
+                            if (brand != "Chromium") {
+                                addJsonObject {
+                                    put("brand", brand)
+                                    put("version", "$major.0.0.0")
+                                }
                             }
                             addJsonObject {
                                 put("brand", "Not.A/Brand")

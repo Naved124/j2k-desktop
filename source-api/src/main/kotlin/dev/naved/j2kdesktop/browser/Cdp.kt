@@ -147,7 +147,13 @@ class CdpConnection private constructor() : WebSocketListener() {
 }
 
 /** One browser tab (a flattened target session). */
-class CdpSession(val connection: CdpConnection, val sessionId: String, val targetId: String) {
+/** [managed] tabs belong to the hidden [Browser] (counted for its idle shutdown). */
+class CdpSession(
+    val connection: CdpConnection,
+    val sessionId: String,
+    val targetId: String,
+    private val managed: Boolean = true,
+) {
     @Volatile
     var isClosed = false
         private set
@@ -190,7 +196,7 @@ class CdpSession(val connection: CdpConnection, val sessionId: String, val targe
         runCatching {
             connection.send("Target.closeTarget", buildJsonObject { put("targetId", targetId) }, timeoutMs = 5_000)
         }
-        Browser.tabClosed(connection)
+        if (managed) Browser.tabClosed(connection)
     }
 }
 

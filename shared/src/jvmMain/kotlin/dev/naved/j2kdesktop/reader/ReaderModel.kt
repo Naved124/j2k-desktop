@@ -6,6 +6,8 @@ import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import dev.naved.j2kdesktop.compat.AndroidCompat
+import dev.naved.j2kdesktop.download.DownloadManager
+import dev.naved.j2kdesktop.library.ReadProgress
 import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import kotlinx.coroutines.CancellationException
@@ -105,8 +107,19 @@ class ReaderModel(
             loaded.clear()
             loaded += chapter
             currentChapterIndex = index
-            slotIndex = if (atEnd) (slots().size - 1).coerceAtLeast(0) else 0
-            scrollPage = if (atEnd) chapter.pages.size - 1 else 0
+            // Unfinished chapter: continue where you stopped
+            val saved = ReadProgress.chapter(source.id, manga.url, chapter.chapter.url)
+            val resume = saved?.lastPage?.takeIf { !atEnd && saved?.read != true && it in 1 until chapter.pages.size }
+            slotIndex = when {
+                atEnd -> (slots().size - 1).coerceAtLeast(0)
+                resume != null -> slots().indexOfFirst { resume in it.pages }.coerceAtLeast(0)
+                else -> 0
+            }
+            scrollPage = when {
+                atEnd -> chapter.pages.size - 1
+                resume != null -> resume
+                else -> 0
+            }
             scrollTarget = index to scrollPage
             preload()
         }
@@ -177,7 +190,10 @@ class ReaderModel(
         chapterError = null
         return try {
             val chapter = chapters[index]
-            val pages = withContext(Dispatchers.IO) { source.getPageList(chapter) }
+            // Downloaded chapters read from disk (works offline)
+            val pages = withContext(Dispatchers.IO) {
+                DownloadManager.localPages(source, manga, chapter) ?: source.getPageList(chapter)
+            }
             if (pages.isEmpty()) error("This chapter has no pages")
             LoadedChapter(index, chapter, pages)
         } catch (e: CancellationException) {
@@ -189,6 +205,14 @@ class ReaderModel(
         } finally {
             isLoadingChapter = false
         }
+    }
+
+    /** Saves the page you're on; the last page (or webtoon's end-of-chapter) marks the chapter read. */
+    fun saveProgress() {
+        val chapter = currentChapter ?: return
+        val first = currentPageIndex
+        val lastShown = if (mode.scrolls) scrollPage else slots().getOrNull(slotIndex)?.pages?.lastOrNull() ?: first
+        ReadProgress.onPage(source.id, manga, chapter.chapter, first, lastShown, chapter.pages.size)
     }
 
     // ----- Pages -----

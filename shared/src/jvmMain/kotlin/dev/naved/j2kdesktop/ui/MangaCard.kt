@@ -23,7 +23,7 @@ import coil3.compose.AsyncImage
 import eu.kanade.tachiyomi.source.model.SManga
 
 @Composable
-fun MangaCard(manga: SManga, onClick: () -> Unit, headers: okhttp3.Headers? = null) {
+fun MangaCard(manga: SManga, onClick: () -> Unit, headers: okhttp3.Headers? = null, badge: String? = null) {
     Box(
         Modifier
             .aspectRatio(2f / 3f)
@@ -37,6 +37,19 @@ fun MangaCard(manga: SManga, onClick: () -> Unit, headers: okhttp3.Headers? = nu
             contentScale = ContentScale.Crop,
             modifier = Modifier.fillMaxSize(),
         )
+        if (badge != null) {
+            Text(
+                badge,
+                color = MaterialTheme.colorScheme.onPrimary,
+                style = MaterialTheme.typography.labelMedium,
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(6.dp)
+                    .clip(RoundedCornerShape(6.dp))
+                    .background(MaterialTheme.colorScheme.primary)
+                    .padding(horizontal = 6.dp, vertical = 2.dp),
+            )
+        }
         Box(
             Modifier
                 .fillMaxWidth()
