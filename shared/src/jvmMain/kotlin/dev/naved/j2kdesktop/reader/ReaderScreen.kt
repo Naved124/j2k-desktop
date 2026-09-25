@@ -47,6 +47,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
@@ -96,6 +97,13 @@ private val BlankCursor: PointerIcon by lazy {
 
 private val BarColor = Color(0xE6101010)
 
+/** Arrow-key hold scrolling state (vertical / webtoon). */
+private class ArrowHold {
+    var job: kotlinx.coroutines.Job? = null
+    var held = false
+    var down = true
+}
+
 /** Swallows clicks so tapping a bar's empty space doesn't also reach the reader underneath. */
 private fun Modifier.eatTaps() = pointerInput(Unit) { detectTapGestures { } }
 
@@ -120,6 +128,7 @@ fun ReaderScreen(request: ReaderRequest, onClose: () -> Unit) {
 
     val listState = rememberLazyListState()
     val turner = remember { SwipeTurner() }
+    val arrowHold = remember { ArrowHold() }
 
     var zoom by remember { mutableStateOf(1f) }
     var pan by remember { mutableStateOf(Offset.Zero) }
@@ -135,6 +144,10 @@ fun ReaderScreen(request: ReaderRequest, onClose: () -> Unit) {
     var edgeBar by remember { mutableStateOf(false) }
     LaunchedEffect(ReaderLauncher.isFullscreen) { if (!ReaderLauncher.isFullscreen) edgeBar = false }
     val uiShown = barsVisible || settingsOpen || edgeBar
+    // Keys always go to the reader: take focus back after bars, settings or fullscreen change
+    LaunchedEffect(barsVisible, settingsOpen, edgeBar, ReaderLauncher.isFullscreen, model.mode) {
+        if (!settingsOpen) runCatching { focus.requestFocus() }
+    }
 
     // Hide the cursor after 2 s without movement
     var lastMove by remember { mutableStateOf(System.currentTimeMillis()) }
@@ -160,6 +173,33 @@ fun ReaderScreen(request: ReaderRequest, onClose: () -> Unit) {
         scope.launch { listState.animateScrollBy(listState.layoutInfo.viewportSize.height * fraction) }
     }
 
+    /**
+     * Vertical/webtoon ↓ / ↑: a tap scrolls a step; holding the key keeps scrolling smoothly
+     * until it's released (key repeats are ignored, so it doesn't stutter).
+     */
+    fun holdScroll(down: Boolean) {
+        arrowHold.held = true
+        if (arrowHold.job?.isActive == true && arrowHold.down == down) return
+        arrowHold.job?.cancel()
+        arrowHold.down = down
+        barsVisible = false
+        arrowHold.job = scope.launch {
+            val viewport = listState.layoutInfo.viewportSize.height.toFloat()
+            val sign = if (down) 1f else -1f
+            listState.animateScrollBy(sign * viewport * 0.35f)
+            if (!arrowHold.held) return@launch
+            listState.scroll {
+                var last = withFrameNanos { it }
+                while (arrowHold.held) {
+                    val now = withFrameNanos { it }
+                    // this. = the list's ScrollScope (not the reader's own scrollBy above)
+                    this.scrollBy(sign * viewport * 1.6f * ((now - last) / 1_000_000_000f))
+                    last = now
+                }
+            }
+        }
+    }
+
     /** Vertical mode keys: jump a whole page, skipping chapter dividers. */
     fun stepPage(forward: Boolean) {
         barsVisible = false
@@ -174,6 +214,11 @@ fun ReaderScreen(request: ReaderRequest, onClose: () -> Unit) {
     }
 
     fun onKey(e: KeyEvent): Boolean {
+        val upOrDown = e.key == Key.DirectionDown || e.key == Key.DirectionUp
+        if (e.type == KeyEventType.KeyUp && upOrDown && model.mode.scrolls) {
+            arrowHold.held = false
+            return true
+        }
         if (e.type != KeyEventType.KeyDown) return false
         val forwardArrow = if (model.rightToLeft) Key.DirectionLeft else Key.DirectionRight
         val backArrow = if (model.rightToLeft) Key.DirectionRight else Key.DirectionLeft
@@ -213,8 +258,8 @@ fun ReaderScreen(request: ReaderRequest, onClose: () -> Unit) {
                         Key.PageDown, forwardArrow -> stepPage(true)
                         Key.PageUp, backArrow -> stepPage(false)
                         Key.Spacebar -> scrollBy(if (e.isShiftPressed) -0.9f else 0.9f)
-                        Key.DirectionDown -> scrollBy(0.15f)
-                        Key.DirectionUp -> scrollBy(-0.15f)
+                        Key.DirectionDown -> holdScroll(true)
+                        Key.DirectionUp -> holdScroll(false)
                         Key.MoveHome -> model.goToPage(0)
                         Key.MoveEnd -> model.goToPage(Int.MAX_VALUE)
                         Key.Equals, Key.Plus, Key.NumPadAdd -> model.changeVerticalScale(0.1f)
@@ -228,8 +273,11 @@ fun ReaderScreen(request: ReaderRequest, onClose: () -> Unit) {
                         Key.Spacebar -> scrollBy(if (e.isShiftPressed) -0.9f else 0.9f)
                         Key.PageDown -> scrollBy(0.9f)
                         Key.PageUp -> scrollBy(-0.9f)
-                        Key.DirectionDown -> scrollBy(0.15f)
-                        Key.DirectionUp -> scrollBy(-0.15f)
+                        Key.DirectionDown -> holdScroll(true)
+                        Key.DirectionUp -> holdScroll(false)
+                        // Left / right: a screen at a time
+                        Key.DirectionRight -> scrollBy(0.9f)
+                        Key.DirectionLeft -> scrollBy(-0.9f)
                         Key.MoveHome -> model.goToPage(0)
                         Key.MoveEnd -> model.goToPage(Int.MAX_VALUE)
                         Key.Equals, Key.Plus, Key.NumPadAdd -> model.changeWebtoonWidth(100)
@@ -301,6 +349,7 @@ fun ReaderScreen(request: ReaderRequest, onClose: () -> Unit) {
                 }
                 .pointerInput(model.mode, model.rightToLeft) {
                     detectTapGestures { pos ->
+                        runCatching { focus.requestFocus() }
                         if (settingsOpen) {
                             settingsOpen = false
                             return@detectTapGestures
@@ -771,7 +820,7 @@ private fun SettingsSheet(model: ReaderModel, onClose: () -> Unit, modifier: Mod
             Text(
                 "Click: show or hide bars · Swipe/scroll: read · Esc: back\n" +
                     "N / P: next / previous chapter · Home / End: first / last page\n" +
-                    "M: mode · D: spread · S: settings · F: fullscreen · 0: reset zoom",
+                    "Arrows: turn / scroll (hold ↓ ↑ to keep scrolling) · M: mode · D: spread · S: settings · F: fullscreen · 0: reset zoom",
                 fontSize = 12.sp,
                 color = Color.Gray,
                 lineHeight = 18.sp,

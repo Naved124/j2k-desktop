@@ -20,8 +20,19 @@ object Startup {
         if (links.isNotEmpty()) {
             runCatching { File(AppDirs.data, "pending-repos.txt").appendText(links.joinToString("\n", postfix = "\n")) }
         }
-        return acquireLock()
+        if (acquireLock()) {
+            showRequest.delete()
+            return true
+        }
+        // Already running: ask that copy to show its window
+        runCatching { showRequest.writeText(System.currentTimeMillis().toString()) }
+        return false
     }
+
+    private val showRequest get() = File(AppDirs.data, "show-window.request")
+
+    /** True (once) when another launch asked this running copy to show its window. */
+    fun takeShowRequest(): Boolean = showRequest.exists() && showRequest.delete()
 
     private fun acquireLock(): Boolean {
         return try {

@@ -23,7 +23,7 @@ private var savedState: Int = Frame.NORMAL
 fun main(args: Array<String>) {
     // A repo link opened while the app runs goes to that window; don't start a second copy
     if (!Startup.begin(args)) {
-        println("J2K Desktop is already running.")
+        println("J2K Desktop is already running: bringing its window to the front.")
         exitProcess(0)
     }
 
@@ -60,9 +60,24 @@ fun main(args: Array<String>) {
             LaunchedEffect(Unit) {
                 ReaderLauncher.minimizeWindow = { window.extendedState = window.extendedState or Frame.ICONIFIED }
             }
+            // Launching the app again while it runs brings this window back instead of doing nothing
+            LaunchedEffect(Unit) {
+                while (true) {
+                    if (Startup.takeShowRequest()) {
+                        window.isVisible = true
+                        window.extendedState = window.extendedState and Frame.ICONIFIED.inv()
+                        window.toFront()
+                        window.requestFocus()
+                    }
+                    kotlinx.coroutines.delay(700)
+                }
+            }
             App()
         }
     }
+    // Closing the window ends the app. Background threads (network, the browser helper) must not
+    // keep it alive, or the next launch finds it "already running" with no window.
+    exitProcess(0)
 }
 
 /**
